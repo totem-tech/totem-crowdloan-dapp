@@ -1,2 +1,9 @@
 # Ignore node modules
 node_modules
+
+# Environment variables
+.env
+.env.*
+
+# scripts
+start.sh

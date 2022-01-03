@@ -1,5 +1,7 @@
-import React from 'react';
-import ReactDOM from 'react-dom';
+import 'regenerator-runtime' // Required for babel
+import React from 'react'
+import ReactDOM from 'react-dom'
+import connect from './modules/messaging'
 
 const ComingSoon = () => (
     <div style={{ textAlign: 'center' }}>
@@ -15,3 +17,6 @@ ReactDOM.render(
     <ComingSoon />,
     document.getElementById('root'),
 )
+console.log(process.env.REACT_APP_PORT)
+
+connect()
