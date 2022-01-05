@@ -72,20 +72,40 @@ module.exports = {
         filename: 'bundle.[fullhash].js'
     },
     plugins: [
+        /*
+         * Enables the use of process.env in the web browser
+         */
         dotenv,
+
+        /*
+         * Configure plugin to automatically include hashed bundle filenames into the index.html file
+         */
         new HtmlWebpackPlugin({
             template: 'public/index.html',
             favicon: 'public/favicon.ico'
         }),
-        new webpack.IgnorePlugin({ resourceRegExp: /abort-controller/ }),
-        new webpack.IgnorePlugin({ resourceRegExp: /node-fetch/ }),
-        new webpack.IgnorePlugin({ resourceRegExp: /node-localstorage/ }),
-        new webpack.IgnorePlugin({ resourceRegExp: /nano/ }),
+
+        /*
+         * Node modules to ignore while building
+         */
+        ...[
+            /abort-controller/,
+            /node-fetch/,
+            /node-localstorage/,
+            /nano/,
+        ].map(regExp => new webpack.IgnorePlugin({ resourceRegExp: regExp })),
+
+        /*
+         * provide alternatives for NodeJS-only modules to be used in the web Browser
+         */
+        new webpack.ProvidePlugin({
+            Buffer: ['buffer', 'Buffer'],
+        })
     ],
     resolve: {
         fallback: {
             assert: false,
-            buffer: false,
+            // required by PolkadotJS
             crypto: false,
             fetch: false, // require.resolve('node-fetch')
             FormData: false, //require.resolve('form-data'),

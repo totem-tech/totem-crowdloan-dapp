@@ -1,7 +1,9 @@
 import 'regenerator-runtime' // Required for babel
 import React from 'react'
 import ReactDOM from 'react-dom'
-import connect from './modules/messaging'
+import connectToMessagingServer from './modules/messaging'
+import polkadotHelper from './modules/blockchain'
+import App from './App'
 
 const ComingSoon = () => (
     <div style={{ textAlign: 'center' }}>
@@ -14,9 +16,24 @@ const ComingSoon = () => (
     </div>
 )
 ReactDOM.render(
-    <ComingSoon />,
+    process.env.REACT_APP_COMING_SOON === 'true'
+        ? < ComingSoon />
+        : <App />,
     document.getElementById('root'),
 )
-console.log(process.env.REACT_APP_PORT)
+console.log(process.env.NODE_ENV)
 
-connect()
+connectToMessagingServer()
+    .then(async () => {
+        const { api } = await polkadotHelper.getConnection()
+        window.api = api
+        window.polkadotHelper = polkadotHelper
+        window.queryBlockchain = (func, args = [], multi, print = true) => polkadotHelper.query(
+            func,
+            args,
+            multi,
+            print,
+        )
+    })
+
+

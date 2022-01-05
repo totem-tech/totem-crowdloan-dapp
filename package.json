@@ -15,8 +15,13 @@
     "build": "webpack --mode production"
   },
   "dependencies": {
+    "@material-ui/core": "^4.12.3",
+    "@material-ui/icons": "^4.11.2",
+    "@polkadot/api": "^7.2.1",
+    "@polkadot/keyring": "^8.2.2",
     "@polkadot/util": "^3.2.1",
-    "@polkadot/util-crypto": "^3.2.1",
+    "@polkadot/util-crypto": "^3.7.1",
+    "buffer": "^6.0.3",
     "dotenv-webpack": "^7.0.3",
     "ignore-loader": "^0.1.2",
     "prop-types": "^15.7.2",

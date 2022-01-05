@@ -1,22 +1,29 @@
 import { getClient, rxIsConnected } from '../../utils/chatClient'
+import { subjectAsPromise } from '../../utils/reactHelper'
+import storage from '../../utils/storageHelper'
+import { generateHash } from '../../utils/utils'
 
+const SERVER_URL = process.env.REACT_APP_MESSAGING_SERVER_URL || 'wss://localhost:3001'
 let client
-export default function () {
+export default async function connect() {
     if (!client) {
-        console.log('Connecting to messaging server')
-        const msURL = 'wss://localhost:3001'
-        client = getClient(msURL)
-        client.onConnect(() => console.log('Connected to', msURL))
+        console.log('Connecting to Totem Messaging service', SERVER_URL)
+        client = getClient(SERVER_URL)
+        client.onConnect(() => console.log('Connected to Totem Messaging service'))
         client.onError(console.warn)
     }
+    await subjectAsPromise(rxIsConnected, true)[0]
     return client
 }
 
-rxIsConnected.subscribe(connected => {
-    if (!connected) return
-
+const init = () => {
+    const hash = generateHash(storage.countries.toArray())
     client
         .countries
-        .promise('')
-        .then(r => console.info('List of countries', r))
-})
+        .promise(hash)
+        .then(countries => console.log({ countries }))
+}
+
+// // wait until messaging server is connected successfully
+// subjectAsPromise(rxIsConnected, true)[0]
+//     .then(init) 
