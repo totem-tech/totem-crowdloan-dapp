@@ -22,18 +22,18 @@ ReactDOM.render(
     document.getElementById('root'),
 )
 console.log(process.env.NODE_ENV)
+const connectBlockchain = async () => {
+    const { api } = await polkadotHelper.getConnection()
+    window.api = api
+    window.polkadotHelper = polkadotHelper
+    window.queryBlockchain = (func, args = [], multi, print = true) => polkadotHelper.query(
+        func,
+        args,
+        multi,
+        print,
+    )
+}
+// connectToMessagingServer()
 
-connectToMessagingServer()
-    .then(async () => {
-        const { api } = await polkadotHelper.getConnection()
-        window.api = api
-        window.polkadotHelper = polkadotHelper
-        window.queryBlockchain = (func, args = [], multi, print = true) => polkadotHelper.query(
-            func,
-            args,
-            multi,
-            print,
-        )
-    })
-
+connectBlockchain()
 
