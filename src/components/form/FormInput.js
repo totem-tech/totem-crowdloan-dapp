@@ -4,8 +4,9 @@ import { InputLabel, MenuItem, Select, TextField } from '@material-ui/core'
 import InputCriteriaHint from './InputCriteriaHint'
 import Message from '../Message'
 import PasswordField from './PasswordField'
-import { deferred, isDefined, isFn } from '../../utils/utils'
+import { deferred, isFn } from '../../utils/utils'
 import RadioGroup from './RadioGroup'
+import { useRxSubject } from '../../utils/reactHelper'
 
 export default function FormInput(props) {
     let {
@@ -16,16 +17,19 @@ export default function FormInput(props) {
         error,
         fullWidth = true,
         id,
+        ignoredAttrs = [],
         label,
         labelDetails,
         message,
         name,
         onBlur,
         onFocus,
-        options,
+        options = [],
         placeholder,
         readOnly = false,
         required,
+        rxOptions,
+        rxOptionsModifier = x => x || [],
         style = {},
         type,
         valid,
@@ -33,7 +37,7 @@ export default function FormInput(props) {
         value,
         variant,
     } = props
-    // 
+    options = useRxSubject(rxOptions || options, rxOptionsModifier)[0]
     style.cursor = disabled
         ? 'no-drop'
         : readOnly
@@ -48,8 +52,6 @@ export default function FormInput(props) {
         error: error || (gotValue && valid === false),
         fullWidth,
         id: id || name,
-        labelDetails: undefined,
-        message: undefined,
         onBlur: deferred((...args) => {
             setIsFocused(false);
             isFn(onBlur) && onBlur(...args)
@@ -60,15 +62,13 @@ export default function FormInput(props) {
         }, 100),
         placeholder: placeholder || label || name,
         style,
-        valid: undefined,
         variant: variant || 'outlined',
     }
     attrs.value = attrs.value === undefined
         ? ''
         : attrs.value
-
     // prevent local properties
-    delete attrs.labelDetails
+    ignoredAttrs.forEach(key => delete attrs[key])
 
     switch (type) {
         // case 'group':
@@ -93,20 +93,22 @@ export default function FormInput(props) {
             attrs.label = ''
             attrs.options = ''
             inputEl = (
-                <Component {...{
-                    ...attrs,
-                    id: attrs.id + '-id',
-                    labelId: attrs.id,
-                }}>
-                    {options.map(({ text, value }) => (
-                        <MenuItem {...{
-                            key: value,
-                            value,
-                        }}>
-                            {text}
-                        </MenuItem>
-                    ))}
-                </Component>
+                <>
+                    <Component {...{
+                        ...attrs,
+                        id: attrs.id + '-id',
+                        labelId: attrs.id,
+                    }}>
+                        {options.map(({ text, value }, i) => (
+                            <MenuItem {...{
+                                key: value + i,
+                                value,
+                            }}>
+                                {text}
+                            </MenuItem>
+                        ))}
+                    </Component>
+                </>
             )
             break
         case 'custom':
@@ -180,7 +182,17 @@ export default function FormInput(props) {
         </div>
     )
 }
-
+FormInput.defaultProps = {
+    ignoredAttrs: [
+        'ignoredAttrs',
+        'labelDetails',
+        'message',
+        'rxOptions',
+        'rxOptionsModifier',
+        'valid'
+    ]
+}
 FormInput.propTypes = {
     containerStyle: PropTypes.object,
+    ignoredAttrs: PropTypes.array,
 }

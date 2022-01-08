@@ -3,9 +3,11 @@ import { subjectAsPromise } from '../../utils/reactHelper'
 import storage from '../../utils/storageHelper'
 import { generateHash } from '../../utils/utils'
 
-const SERVER_URL = process.env.REACT_APP_MESSAGING_SERVER_URL || 'wss://localhost:3001'
+const SERVER_URL = process.env.REACT_APP_MESSAGING_SERVER_URL
 let client
 export default async function connect() {
+    if (!SERVER_URL) throw new Error('Missing messaging server websocket URL')
+
     if (!client) {
         console.log('Connecting to Totem Messaging service', SERVER_URL)
         client = getClient(SERVER_URL)

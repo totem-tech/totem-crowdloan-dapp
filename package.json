@@ -21,6 +21,7 @@
     "@polkadot/keyring": "^8.2.2",
     "@polkadot/util": "^3.7.1",
     "@polkadot/util-crypto": "^3.7.1",
+    "bip39": "^3.0.4",
     "buffer": "^6.0.3",
     "dotenv-webpack": "^7.0.3",
     "ignore-loader": "^0.1.2",
@@ -32,6 +33,7 @@
     "rxjs": "^7.4.0",
     "semantic-ui-react": "^2.0.4",
     "socket.io-client": "^3.0.4",
+    "stream-browserify": "^3.0.0",
     "web3-utils": "^1.6.1"
   },
   "devDependencies": {

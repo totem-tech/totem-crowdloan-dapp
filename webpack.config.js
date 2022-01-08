@@ -99,6 +99,7 @@ module.exports = {
          */
         new webpack.ProvidePlugin({
             Buffer: ['buffer', 'Buffer'],
+            'regeneratorRuntime': ['regenerator-runtime']
         })
     ],
     resolve: {
@@ -110,7 +111,7 @@ module.exports = {
             FormData: false, //require.resolve('form-data'),
             fs: false,
             path: false,
-            stream: false,
+            stream: require.resolve('stream-browserify'),
             util: false,
         }
     }
