@@ -33,7 +33,7 @@ const connectBlockchain = async () => {
         print,
     )
 }
-// connectToMessagingServer()
 
+connectToMessagingServer()
 connectBlockchain()
 

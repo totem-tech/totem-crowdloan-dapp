@@ -2,7 +2,6 @@ const webpack = require('webpack')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const Dotenv = require('dotenv-webpack')
 
-const dotenv = new Dotenv()
 // Port used to start ONLY the development environment
 const port = process.env.PORT || 3005
 
@@ -75,7 +74,7 @@ module.exports = {
         /*
          * Enables the use of process.env in the web browser
          */
-        dotenv,
+        new Dotenv(),
 
         /*
          * Configure plugin to automatically include hashed bundle filenames into the index.html file

@@ -1304,7 +1304,7 @@
     "micro-base" "^0.10.0"
     "tweetnacl" "^1.0.3"
 
-"@polkadot/util@*", "@polkadot/util@^3.2.1", "@polkadot/util@^3.7.1":
+"@polkadot/util@*", "@polkadot/util@^3.7.1":
   "integrity" "sha512-nvgzAbT/a213mpUd56YwK/zgbGKcQoMNLTmqcBHn1IP9u5J9XJcb1zPzqmCTg6mqnjrsgzJsWml9OpQftrcB6g=="
   "resolved" "https://registry.npmjs.org/@polkadot/util/-/util-3.7.1.tgz"
   "version" "3.7.1"
