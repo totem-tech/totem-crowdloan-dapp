@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { BehaviorSubject } from "rxjs"
+import { colors } from '@mui/material'
 import FormBuilder from "../../components/form/FormBuilder"
 import modalService from '../../components/modal/modalService'
 import identityHelper from '../../utils/substrate/identityHelper'
@@ -47,7 +48,7 @@ export const getRxInputs = () => {
                                 <div style={{ float: 'left' }}>
                                     {name + ' '}
                                 </div>
-                                <div style={{ float: 'right' }}>
+                                <div style={{ float: 'right', color: colors.grey[500] }}>
                                     <Balance {...{
                                         address,
                                         key: address,

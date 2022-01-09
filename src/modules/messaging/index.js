@@ -26,6 +26,6 @@ const init = () => {
         .then(countries => console.log({ countries }))
 }
 
-// // wait until messaging server is connected successfully
-// subjectAsPromise(rxIsConnected, true)[0]
-//     .then(init) 
+// wait until messaging server is connected successfully
+subjectAsPromise(rxIsConnected, true)[0]
+    .then(init) 
