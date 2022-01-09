@@ -20,7 +20,8 @@ import SimpleModal from './SimpleModal'
  * // For a full list of accepted props see SimpleModal component.
  * const modalProps = {
  *       actionButtons: [{
- *          
+ *          content: 'Click Me!',
+ *          onClicked: () => alert('You clicked me!'),
  *       }],
  *       content: 'This is the body/content of the modal. You can use text or any React element here.',
  *       subtitle: 'This is the subtitle that appears underneath the title.',
@@ -103,8 +104,8 @@ export class ModalService {
             ],
             closeButton,
             content,
-            ignoredProps: [
-                ...SimpleModal.defaultProps.ignoredProps || [],
+            ignoredAttrs: [
+                ...SimpleModal.defaultProps.ignoredAttrs || [],
                 'onConfirm',
                 'confirmButton',
             ],

@@ -7,16 +7,16 @@ import {
     DialogContent,
     DialogContentText,
     DialogTitle,
-} from '@material-ui/core'
+} from '@mui/material'
 import { toProps } from '../reactUtils'
-import { isFn, isObj } from '../../utils/utils'
+import { isFn } from '../../utils/utils'
 
 export default function SimpleModal(props) {
     const {
         actionButtons = [],
         closeButton,
         content,
-        ignoredProps,
+        ignoredAttrs,
         onClose,
         open: _open,
         prefix,
@@ -38,26 +38,25 @@ export default function SimpleModal(props) {
             : setOpen(_open)
     }, [_open])
 
-    const closeButtonProps = toProps(closeButton)
-    if (closeButtonProps) {
-        const onClickOriginal = closeButtonProps.onClick
-        closeButtonProps.color = ''
-        closeButtonProps.onClick = (...args) => {
+    const closeBtnProps = toProps(closeButton)
+    if (closeBtnProps) {
+        const onClickOriginal = closeBtnProps.onClick
+        // if no color specified use grey background
+        closeBtnProps.color = closeBtnProps.color || 'inherit'
+        closeBtnProps.onClick = (...args) => {
             handleClose()
             isFn(onClickOriginal) && onClickOriginal(...args)
         }
     }
     // actions buttons
     const actionsBtns = [
-        closeButtonProps,
+        closeBtnProps,
         ...actionButtons || [],
     ]
         .filter(Boolean)
         .map(x => ({
-            color: 'primary',
             variant: 'contained',
             ...toProps(x) || {},
-
         }))
     // body content
     const dialogProps = {
@@ -65,7 +64,7 @@ export default function SimpleModal(props) {
         onClose: handleClose,
         open,
     }
-    ignoredProps.forEach(x => dialogProps[x] = '')
+    ignoredAttrs.forEach(x => delete dialogProps[x])
     // modal title
     const titleProps = toProps(title)
 
@@ -95,7 +94,13 @@ export default function SimpleModal(props) {
             )}
             {!!actionsBtns.length && (
                 <DialogActions style={{ padding: '15px 20px 25px' }}>
-                    {actionsBtns.map(props => <Button {...props} />)}
+                    {actionsBtns
+                        .filter(Boolean)
+                        .map((props, i) => {
+                            const { Component = Button } = props
+                            delete props.Component
+                            return <Component {...{ ...props, key: i }} />
+                        })}
                 </DialogActions>
             )}
             {suffix}
@@ -134,16 +139,17 @@ SimpleModal.propTypes = {
 SimpleModal.defaultProps = {
     closeButton: 'Close',
     // if `true`, will prevent closing when modal is clicked
-    disableBackdropClick: false,
+    // disableBackdropClick: false,
     // if `true`, will close modal when escape button is pressed
     disableEscapeKeyDown: true,
     fullScreen: false,
     fullWidth: false,
     // ignore these attributes to avoid any unexpected errors
-    ignoredProps: [
+    ignoredAttrs: [
         'actionButtons',
         'closeButton',
         'content',
+        'ignoredAttrs',
         'subtitle',
         'subtitle',
         'suffix',

@@ -1,5 +1,5 @@
 import React from 'react'
-import { Box, colors, Typography } from '@material-ui/core';
+import { Box, colors, Typography } from '@mui/material';
 import { isStr } from '../utils/utils';
 
 export const STATUS = {

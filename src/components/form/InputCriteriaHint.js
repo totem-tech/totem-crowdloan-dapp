@@ -6,8 +6,8 @@ import {
     ListItem,
     ListItemIcon,
     ListItemText,
-} from '@material-ui/core'
-import { Cancel, CheckCircleSharp } from '@material-ui/icons'
+} from '@mui/material'
+import { Cancel, CheckCircleSharp } from '@mui/icons-material'
 import { isArr } from '../../utils/utils'
 
 const { green, grey, red } = colors

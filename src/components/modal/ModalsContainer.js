@@ -8,7 +8,7 @@ export default function ModalsContainer({ rxModals }) {
     return (
         <div className='modals-container'>
             {modals.map(([id, modalOrProps], i) => (
-                <div key={id} id={id}>
+                <div key={id + i} id={id}>
                     {React.isValidElement(modalOrProps)
                         ? modalOrProps
                         : <SimpleModal {...modalOrProps} />

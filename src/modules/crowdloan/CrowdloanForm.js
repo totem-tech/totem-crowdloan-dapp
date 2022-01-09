@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { BehaviorSubject } from "rxjs"
 import FormBuilder from "../../components/form/FormBuilder"
-import { useRxSubject } from '../../utils/reactHelper'
+import modalService from '../../components/modal/modalService'
 import identityHelper from '../../utils/substrate/identityHelper'
 import Balance from '../blockchain/Balance'
 
@@ -10,22 +10,32 @@ export default function CrowdloanForm(props) {
     return (
         <FormBuilder {...{
             rxInputs,
-            onSubmit: (_, values) => alert(JSON.stringify(values, null, 4)),
+            onSubmit: (_, values) => modalService.confirm({
+                content: 'test',
+                // onConfirm: alert(values)
+            }, 'test'),
             ...props
         }} />
     )
 }
 CrowdloanForm.defaultProps = {
-    submitButton: 'Hit it!'
+    submitButton: 'Submit!'
 }
 
+export const inputNames = {
+    amountContributed: 'amountContributed',
+    amountToContribute: 'amountToContribute',
+    amountPledge: 'amountPledge',
+    identity: 'identity',
+}
 export const getRxInputs = () => {
     const rxInputs = new BehaviorSubject([
         {
-            label: 'Select Your Contribution Identity',
-            name: 'identity',
+            inlineLabel: true,
+            label: 'Select your contribution identity',
+            name: inputNames.identity,
             options: [],
-            placeholder: 'test input',
+            placeholder: 'Select an identity',
             rxOptions: identityHelper.rxIdentities,
             rxOptionsModifier: identities => {
                 identities = Array.from(identities)
@@ -35,10 +45,13 @@ export const getRxInputs = () => {
                         text: (
                             <div style={{ width: '100%' }}>
                                 <div style={{ float: 'left' }}>
-                                    {name}
+                                    {name + ' '}
                                 </div>
                                 <div style={{ float: 'right' }}>
-                                    <Balance {...{ address }} />
+                                    <Balance {...{
+                                        address,
+                                        key: address,
+                                    }} />
                                 </div>
                             </div>
                         ),
@@ -49,6 +62,25 @@ export const getRxInputs = () => {
             },
             required: true,
             type: 'select',
+        },
+        {
+            label: 'Amount you contributed',
+            name: inputNames.amountContributed,
+            placeholder: 'Enter amount of DOT',
+            type: 'number',
+        },
+        {
+            label: 'Enter an amount you would like to contribute',
+            name: inputNames.amountToContribute,
+            placeholder: 'Enter amount of DOT',
+            type: 'number',
+        },
+        {
+            label: 'Enter an amount you would like to pledge',
+            labelDetails: 'Maximum 10% of your total contribution',
+            name: inputNames.amountPledged,
+            placeholder: 'Enter amount of DOT',
+            type: 'number',
         },
     ])
     return rxInputs

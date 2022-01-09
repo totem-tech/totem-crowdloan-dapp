@@ -1,14 +1,14 @@
 import React, { useState } from 'react'
 import PropTypes from 'prop-types'
 import { BehaviorSubject } from 'rxjs'
-import Message, { STATUS } from '../Message'
-import { Button } from '@material-ui/core'
-import FormInput from './FormInput'
-import { findInput, getValues, validateInput } from './InputCriteriaHint'
-import { isDefined, isFn } from '../../utils/utils'
+import { Button } from '@mui/material'
 import { useRxSubject } from '../../utils/reactHelper'
+import { isDefined, isFn } from '../../utils/utils'
+import Message, { STATUS } from '../Message'
 import { toProps } from '../reactUtils'
 import modalService from '../modal/modalService'
+import FormInput from './FormInput'
+import { findInput, getValues, validateInput } from './InputCriteriaHint'
 
 const attachName = inputs => (inputs || [])
     .map((input, i) => {

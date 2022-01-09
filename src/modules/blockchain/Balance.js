@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react'
 import { formatBalance } from '@polkadot/util'
-import blockchainHelper from '.'
-import { isArr } from '../../utils/utils'
-import { CircularProgress } from '@material-ui/core'
+import { CircularProgress } from '@mui/material'
+import { Error } from '@mui/icons-material'
 import { unsubscribe } from '../../utils/reactHelper'
+import { isArr } from '../../utils/utils'
+import blockchainHelper from './blockchainHelper'
 
 export const useBalance = (addresses) => {
     const [[balance, loading, error], setBalance] = useState([0, true, null])
@@ -13,6 +14,7 @@ export const useBalance = (addresses) => {
         let sub
         const handleResult = result => {
             if (!mounted) return
+
             const balance = !isArr(result)
                 ? formatBalance(result.free, { decimals: 12 })
                 : result.map(x => formatBalance(x.free))
@@ -41,7 +43,7 @@ export const useBalance = (addresses) => {
 export default function Balance({ address }) {
     const [balance, loading, error] = useBalance(address)[0]
 
-    if (error) return error
-    if (loading) return <CircularProgress size={18} />
+    if (error) return <Error color='error' size={18} />
+    if (loading) return <CircularProgress color='warning' size={18} />
     return balance
 }

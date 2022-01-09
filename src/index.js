@@ -18,7 +18,7 @@ const ComingSoon = () => (
 )
 ReactDOM.render(
     process.env.REACT_APP_COMING_SOON === 'true'
-        ? < ComingSoon />
+        ? <ComingSoon />
         : <App />,
     document.getElementById('root'),
 )

@@ -1,12 +1,20 @@
 import React, { useState } from 'react'
 import PropTypes from 'prop-types'
-import { InputLabel, MenuItem, Select, TextField } from '@material-ui/core'
+import {
+    colors,
+    FormControl,
+    InputLabel,
+    MenuItem,
+    Select,
+    TextField,
+    Typography,
+} from '@mui/material'
+import { deferred, isFn } from '../../utils/utils'
+import { useRxSubject } from '../../utils/reactHelper'
 import InputCriteriaHint from './InputCriteriaHint'
 import Message from '../Message'
 import PasswordField from './PasswordField'
-import { deferred, isFn } from '../../utils/utils'
 import RadioGroup from './RadioGroup'
-import { useRxSubject } from '../../utils/reactHelper'
 
 export default function FormInput(props) {
     let {
@@ -18,8 +26,10 @@ export default function FormInput(props) {
         fullWidth = true,
         id,
         ignoredAttrs = [],
+        inlineLabel = false,
         label,
         labelDetails,
+        labelId,
         message,
         name,
         onBlur,
@@ -46,7 +56,8 @@ export default function FormInput(props) {
     let inputEl = ''
     const { hideOnBlur } = validation || {}
     const [isFocused, setIsFocused] = useState(false)
-    const gotValue = ![null, undefined, ''].includes(value)
+    const gotValue = ![null, undefined, '']
+        .includes(value)
     const attrs = {
         ...props,
         error: error || (gotValue && valid === false),
@@ -60,15 +71,47 @@ export default function FormInput(props) {
             setIsFocused(true);
             isFn(onFocus) && onFocus(...args)
         }, 100),
-        placeholder: placeholder || label || name,
         style,
         variant: variant || 'outlined',
     }
+
+    labelId = labelId || `${id || name}-label`
     attrs.value = attrs.value === undefined
         ? ''
         : attrs.value
     // prevent local properties
     ignoredAttrs.forEach(key => delete attrs[key])
+    // if (!inlineLabel) delete attrs.label
+
+    label = !!label && (
+        <InputLabel {...{
+            id: labelId,
+            htmlFor: attrs.id,
+            style: {
+                fontWeight: 'bold',
+                marginBottom: 7,
+            },
+        }}
+        // disableAnimation shrink={true} focused={false}
+        >
+            {label}
+            {required && (
+                <sup style={{ color: 'red' }}>
+                    *
+                </sup>
+            )}
+            {!!labelDetails && (
+                <div style={{
+                    fontWeight: 'normal',
+                    margin: '-5px 0',
+                    paddingTop: 3,
+                }}>
+                    <small>{labelDetails}</small>
+                </div>
+            )}
+        </InputLabel>
+    )
+    delete attrs.label
 
     switch (type) {
         // case 'group':
@@ -82,23 +125,43 @@ export default function FormInput(props) {
             return ''
         case 'html':
             inputEl = content
-            attrs.content = ''
+            delete attrs.content
             break
         case 'radio':
-            attrs.label = ''
-            inputEl = <RadioGroup {...attrs} />
+            Component = Component || RadioGroup
+            delete attrs.label
+            inputEl = <Component {...attrs} />
             break
         case 'select':
             Component = Component || Select
-            attrs.label = ''
-            attrs.options = ''
+            attrs.placeholder = attrs.placeholder || 'Select an item'
             inputEl = (
                 <>
-                    <Component {...{
-                        ...attrs,
-                        id: attrs.id + '-id',
-                        labelId: attrs.id,
-                    }}>
+                    {!attrs.value && (
+                        <Typography {...{
+                            style: {
+                                position: 'absolute',
+                                margin: '16px 15px',
+                                fontSize: '105%',
+                                color: colors.grey[500],
+                            },
+                        }}>
+
+                            {attrs.placeholder}
+                        </Typography>
+                    )}
+                    <Component {...attrs}>
+                        {props.allowDeselect !== false && (
+                            <MenuItem {...{
+                                style: {
+                                    fontWeight: 'bold',
+                                    fontStyle: 'italic',
+                                },
+                                value: '',
+                            }}>
+                                {attrs.placeholder}
+                            </MenuItem>
+                        )}
                         {options.map(({ text, value }, i) => (
                             <MenuItem {...{
                                 key: value + i,
@@ -114,11 +177,10 @@ export default function FormInput(props) {
         case 'custom':
         // Password type and all other types accepted by TextField
         default:
-            Component = Component || (
-                type === 'password'
-                    ? PasswordField
-                    : TextField
-            )
+            Component = Component
+                || type === 'password'
+                ? PasswordField
+                : TextField
 
             inputEl = (
                 <Component {...{
@@ -135,7 +197,10 @@ export default function FormInput(props) {
         && (
             <Message {...{
                 ...message,
-                style: { marginBottom: 0 },
+                style: {
+                    marginBottom: 0,
+                    ...message?.style,
+                },
             }} />
         )
     const hints = validation
@@ -147,35 +212,17 @@ export default function FormInput(props) {
                 value,
             }} />
         )
+
     return (
         <div {...{
             ...containerProps,
             style: {
                 margin: '0 0 15px',
+                position: 'relative',
                 ...containerProps?.style,
             }
         }}>
-            {!!label && (
-                <InputLabel {...{
-                    htmlFor: attrs.id,
-                    style: {
-                        fontWeight: 'bold',
-                        marginBottom: 7,
-                    },
-                }}>
-                    {label}
-                    {required && (
-                        <sup style={{ color: 'red' }}>
-                            *
-                        </sup>
-                    )}
-                    {!!labelDetails && (
-                        <div style={{ fontWeight: 'normal', paddingTop: 3 }}>
-                            <small>{labelDetails}</small>
-                        </div>
-                    )}
-                </InputLabel>
-            )}
+            {label}
             {inputEl}
             {msg}
             {hints}
@@ -184,7 +231,10 @@ export default function FormInput(props) {
 }
 FormInput.defaultProps = {
     ignoredAttrs: [
+        'allowDeselect',
+        'Component',
         'ignoredAttrs',
+        'inlineLabel',
         'labelDetails',
         'message',
         'rxOptions',
@@ -195,4 +245,5 @@ FormInput.defaultProps = {
 FormInput.propTypes = {
     containerStyle: PropTypes.object,
     ignoredAttrs: PropTypes.array,
+    inlineLabel: PropTypes.bool,
 }

@@ -1,10 +1,6 @@
 import React, { useState } from 'react'
-import {
-    IconButton,
-    InputAdornment,
-    TextField,
-} from '@material-ui/core'
-import { Visibility, VisibilityOff } from '@material-ui/icons'
+import { IconButton, InputAdornment, TextField } from '@mui/material'
+import { Visibility, VisibilityOff } from '@mui/icons-material'
 
 /**
  * @name    PasswordField
