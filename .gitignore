@@ -9,3 +9,5 @@ node_modules
 # scripts
 start.sh
 start*.sh
+build.sh
+build*.sh

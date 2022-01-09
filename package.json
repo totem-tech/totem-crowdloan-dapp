@@ -11,7 +11,7 @@
     }
   ],
   "scripts": {
-    "clear-dist": "rm -rf dist/bundle*",
+    "clear-dist": "rm -rf dist/*",
     "build": "npm run clear-dist && webpack --mode production",
     "build-dev": "npm run clear-dist && webpack --mode development",
     "start": "webpack-dev-server",
