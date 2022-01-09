@@ -11,14 +11,14 @@ export const useBalance = (addresses) => {
     useEffect(() => {
         let mounted = true
         let sub
+        const handleResult = result => {
+            if (!mounted) return
+            const balance = !isArr(result)
+                ? formatBalance(result.free, { decimals: 12 })
+                : result.map(x => formatBalance(x.free))
+            setBalance([balance, false])
+        }
         const fetch = async () => {
-            const handleResult = result => {
-                if (!mounted) return
-                const balance = !isArr(result)
-                    ? formatBalance(result.free, { decimals: 12 })
-                    : result.map(x => formatBalance(x.free))
-                setBalance([balance, false])
-            }
             sub = await blockchainHelper
                 .getBalance(
                     addresses,
@@ -26,6 +26,9 @@ export const useBalance = (addresses) => {
                 )
         }
         if (addresses) fetch()
+            .catch(err =>
+                setBalance([0, false, `${err}`])
+            )
         return () => {
             mounted = false
             unsubscribe(sub)
@@ -38,8 +41,7 @@ export const useBalance = (addresses) => {
 export default function Balance({ address }) {
     const [balance, loading, error] = useBalance(address)[0]
 
-    console.log({ balance, address })
     if (error) return error
-    if (loading) return <CircularProgress size={15} />
+    if (loading) return <CircularProgress size={18} />
     return balance
 }
