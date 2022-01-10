@@ -4,7 +4,7 @@ import connectToMessagingServer from './modules/messaging'
 import blockchain from './modules/blockchain'
 import App from './App'
 
-console.log(process.env.NODE_ENV)
+console.log(`${process.env.REACT_APP_ENV} in ${process.env.NODE_ENV} mode`)
 
 const ComingSoon = () => (
     <div style={{ textAlign: 'center' }}>
