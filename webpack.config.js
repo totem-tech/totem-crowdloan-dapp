@@ -1,9 +1,17 @@
 const webpack = require('webpack')
 const HtmlWebpackPlugin = require('html-webpack-plugin')
 const Dotenv = require('dotenv-webpack')
+const path = require('path')
+const LodashWebpackPlugin = require('lodash-webpack-plugin')
+
 
 // Port used to start ONLY the development environment
 const port = process.env.PORT || 3005
+const distDir = process.env.DIST_DIR || 'dist'
+const dotEnvPath = process.env.DOT_ENV_PATH || './.env'
+const dotEnv = new Dotenv({
+    path: path.resolve(__dirname, dotEnvPath),
+})
 
 module.exports = {
     entry: './src/index.js',
@@ -68,13 +76,14 @@ module.exports = {
         ]
     },
     output: {
-        filename: 'bundle.[fullhash].js'
+        filename: 'bundle.[fullhash].js',
+        path: path.resolve(__dirname, distDir),
     },
     plugins: [
         /*
          * Enables the use of process.env in the web browser
          */
-        new Dotenv(),
+        dotEnv,
 
         /*
          * Configure plugin to automatically include hashed bundle filenames into the index.html file
@@ -100,7 +109,13 @@ module.exports = {
         new webpack.ProvidePlugin({
             Buffer: ['buffer', 'Buffer'],
             'regeneratorRuntime': ['regenerator-runtime']
-        })
+        }),
+
+        /*
+         * Compress builds
+         */
+        // excludes unsed lodash node_module features
+        new LodashWebpackPlugin(),
     ],
     resolve: {
         fallback: {

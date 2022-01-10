@@ -1,4 +1,6 @@
 import { getClient, rxIsConnected } from '../../utils/chatClient'
+import { setSelected } from '../../utils/languageHelper'
+import PromisE from '../../utils/PromisE'
 import { subjectAsPromise } from '../../utils/reactHelper'
 import storage from '../../utils/storageHelper'
 import { generateHash } from '../../utils/utils'
@@ -11,9 +13,12 @@ export default async function connect() {
     if (!client) {
         console.log('Connecting to Totem Messaging service', SERVER_URL)
         client = getClient(SERVER_URL)
-        client.onConnect(() => console.log('Connected to Totem Messaging service'))
+        client.onConnect(() => console.log('Connected to Totem Messaging service', rxIsConnected))
         client.onError(console.warn)
     }
+    window.client = client
+
+    setSelected('EN', client)
     await subjectAsPromise(rxIsConnected, true)[0]
     return client
 }
@@ -21,11 +26,10 @@ export default async function connect() {
 const init = () => {
     const hash = generateHash(storage.countries.toArray())
     client
-        .countries
-        .promise(hash)
+        .countries(hash)
         .then(countries => console.log({ countries }))
 }
 
 // wait until messaging server is connected successfully
 subjectAsPromise(rxIsConnected, true)[0]
-    .then(init) 
+    .then(init)
