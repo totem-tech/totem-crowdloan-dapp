@@ -89,7 +89,7 @@ const identityOptionsModifier = rxInputs => identities => {
         }))
 
     options = arrSort(options, 'name')
-        .map(({ address, name, uri: injected }) => ({
+        .map(({ address, name, injected }) => ({
             key: address,
             text: (
                 <div style={{ width: '100%' }}>
