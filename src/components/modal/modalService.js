@@ -77,23 +77,23 @@ export class ModalService {
             onClose,
             onConfirm,
         } = confirmProps
-        const closeBtnProps = toProps(closeButton) || {}
-        const confirmBtnProps = toProps(confirmButton) || {}
+        const closeBtnProps = toProps(closeButton)
+        const confirmBtnProps = toProps(confirmButton)
         const doConfirm = accepted => {
             isFn(onConfirm) && onConfirm(accepted)
             this.delete(id)
         }
-        closeButton = {
+        closeButton = closeBtnProps !== null && {
             ...closeBtnProps,
             children: 'Cancel',
             onClick: (...args) => isFn(closeBtnProps.onClick) && closeBtnProps.onClick(...args),
         }
-        confirmButton = {
+        confirmButton = confirmBtnProps !== null && {
             ...confirmBtnProps || {},
             children: 'Confirm',
             onClick: (...args) => {
                 doConfirm(true)
-                isFn(confirmBtnProps.onClick) && confirmBtnProps.onClick(...args)
+                isFn(confirmBtnProps?.onClick) && confirmBtnProps.onClick(...args)
             },
         }
         return this.set({

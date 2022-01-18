@@ -1,8 +1,17 @@
-import BlockchainHelper from '../../utils/substrate/BlockchainHelper'
+import _BlockchainHelper from '../../utils/substrate/BlockchainHelper'
 
-const NODE_URLS = (process.env.REACT_APP_NODE_URL || '').split(',')
-const TITLE = process.env.REACT_APP_NODE_TITLE || 'Blockchain Network'
-// Delay in milliseconds to disconnect after the disconnect function is invoked
-const DISCONNECT_DELAY = parseInt(process.env.REACT_APP_BLOCKCHAIN_DISCONNECT_DELAY_MS || 1000 * 60 * 15) || 0
-
-export default new BlockchainHelper(NODE_URLS, TITLE, DISCONNECT_DELAY)
+export const BlockchainHelper = _BlockchainHelper
+export default new _BlockchainHelper(
+    (process.env.REACT_APP_NODE_URL || '')
+        .split(',')
+        .filter(Boolean),
+    process.env.REACT_APP_NODE_TITLE || 'Blockchain Network',
+    parseInt(process.env.REACT_APP_DISCONNECT_DELAY_MS || 1000 * 60 * 15),
+    undefined,
+    {},
+    {
+        amount: parseInt(process.env.REACT_APP_UNIT_AMOUNT || '') || undefined,
+        decimals: parseInt(process.env.REACT_APP_UNIT_DECIMALS || '0'),
+        name: process.env.REACT_APP_UNIT_NAME || 'DOT'
+    },
+)

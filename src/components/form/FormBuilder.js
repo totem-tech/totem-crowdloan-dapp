@@ -111,7 +111,7 @@ export default function FormBuilder(props) {
         const ignore = hidden
             || ['html', 'group'].includes(type)
             || hiddenInputs.includes(name)
-        if (ignore) return
+        if (ignore) return console.log({ ignored: name })
         if (error || loading) return true
 
         const empty = [undefined, null, ''].includes(value)
@@ -142,6 +142,24 @@ export default function FormBuilder(props) {
     const submitDisabled = loading
         || !!inputs.find(checkInput)
         || !checkValuesChanged()
+
+    window.debug = {
+        loading,
+        submitDisabled,
+        inputs,
+        valuesOriginal,
+        values,
+        checkInput,
+        checkValuesChanged,
+    }
+    // console.log({
+    //     submitDisabled,
+    //     inputs,
+    //     valuesOriginal,
+    //     values,
+    //     valid: inputs.find(checkInput),
+    //     checkValuesChanged: checkValuesChanged(),
+    // })
 
     return (
         <div {...{

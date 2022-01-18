@@ -8,7 +8,7 @@ import {
     ListItemText,
 } from '@mui/material'
 import { Cancel, CheckCircleSharp } from '@mui/icons-material'
-import { isArr } from '../../utils/utils'
+import { isArr, isSubjectLike } from '../../utils/utils'
 
 const { green, grey, red } = colors
 
@@ -91,6 +91,9 @@ export const fillInputs = (inputs = [], values = []) => {
  * @returns {Object} input
  */
 export const findInput = (name, inputs = []) => {
+    inputs = isSubjectLike(inputs)
+        ? inputs.value
+        : inputs
     for (let i = 0; i < inputs.length; i++) {
         if (name === inputs[i].name) return inputs[i]
 

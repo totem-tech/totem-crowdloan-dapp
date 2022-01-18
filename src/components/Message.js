@@ -35,9 +35,12 @@ export default function Message({ status, style, text }) {
                 whiteSpace: 'auto',
                 ...style,
             }}>
-                <Typography style={{
-                    color: color[900],
-                    padding: '7px 15px',
+                <Typography {...{
+                    component: 'div',
+                    style: {
+                        color: color[900],
+                        padding: '7px 15px',
+                    }
                 }}>
                     {text}
                 </Typography>

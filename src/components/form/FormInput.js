@@ -135,6 +135,19 @@ export default function FormInput(props) {
         case 'select':
             Component = Component || Select
             attrs.placeholder = attrs.placeholder || 'Select an item'
+            // remove top and bottom padding from the dropdown menu 
+            attrs.MenuProps = {
+                ...attrs.MenuProps,
+                MenuListProps: {
+                    ...attrs?.MenuProps?.MenuListProps,
+                    style: {
+                        paddingTop: 0,
+                        paddingBottom: 0,
+                        ...attrs?.MenuProps?.MenuListProps?.style,
+                    }
+                }
+            }
+
             inputEl = (
                 <>
                     {!attrs.value && (
