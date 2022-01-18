@@ -1,8 +1,9 @@
-const webpack = require('webpack')
-const HtmlWebpackPlugin = require('html-webpack-plugin')
+const CopyWebpackPlugin = require('copy-webpack-plugin');
 const Dotenv = require('dotenv-webpack')
-const path = require('path')
+const HtmlWebpackPlugin = require('html-webpack-plugin')
 const LodashWebpackPlugin = require('lodash-webpack-plugin')
+const path = require('path')
+const webpack = require('webpack')
 
 
 // Port used to start ONLY the development environment
@@ -79,7 +80,18 @@ module.exports = {
         filename: 'bundle.[fullhash].js',
         path: path.resolve(__dirname, distDir),
     },
+
     plugins: [
+        // Copy static assets
+        new CopyWebpackPlugin({
+            patterns: [
+                {
+                    from: path.resolve(__dirname, 'public/images'),
+                    to: 'images',
+                }
+            ]
+        }),
+
         /*
          * Enables the use of process.env in the web browser
          */

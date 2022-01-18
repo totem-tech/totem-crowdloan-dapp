@@ -8,8 +8,7 @@ import Balance from '../blockchain/Balance'
 import enableExtionsion from '../blockchain/enableExtension'
 import { findInput } from '../../components/form/InputCriteriaHint'
 import { STATUS } from '../../components/Message'
-import { Extension } from '@mui/icons-material'
-import { deferred } from '../../utils/utils'
+import { arrSort, deferred, textEllipsis } from '../../utils/utils'
 
 export default function CrowdloanForm(props) {
     const rxInputs = useState(getRxInputs)[0]
@@ -79,15 +78,23 @@ export const getRxInputs = () => {
     return rxInputs
 }
 
+// Identity options modifier
 const identityOptionsModifier = rxInputs => identities => {
     identities = Array.from(identities)
-    const options = identities
+    let options = identities
         .map(([address, { name, uri }]) => ({
+            address,
+            name,
+            injected: uri === null,
+        }))
+
+    options = arrSort(options, 'name')
+        .map(({ address, name, uri: injected }) => ({
             key: address,
             text: (
                 <div style={{ width: '100%' }}>
                     <div style={{ float: 'left' }}>
-                        <img {...uri === null
+                        <img {...injected
                             ? { // Polkadot logo
                                 src: 'images/polkadot-logo-circle.png',
                                 style: {
@@ -105,7 +112,7 @@ const identityOptionsModifier = rxInputs => identities => {
                                 },
                             }
                         } />
-                        {name + ' '}
+                        {textEllipsis(name, 20, 3, false)}
                     </div>
                     <div style={{
                         color: colors.grey[500],
@@ -125,6 +132,7 @@ const identityOptionsModifier = rxInputs => identities => {
     return options
 }
 
+// Check if extension is enabled and any indentities were injected
 const deferredCheckExtenstion = deferred(rxInputs => {
     if (!rxInputs.value) return
     const injected = identityHelper
@@ -155,6 +163,5 @@ const deferredCheckExtenstion = deferred(rxInputs => {
                 </div>
             ),
         }
-    console.log({ injected })
     rxInputs.next(rxInputs.value)
 }, 300)
