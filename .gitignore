@@ -1,2 +1,20 @@
 # Ignore node modules
 node_modules
+
+# ignored bundles
+dist/bundle*
+
+# Environment variables
+.env
+.env.*
+*.env.*
+
+# scripts
+start.sh
+start*.sh
+build.sh
+build*.sh
+
+# apple
+.DS_Store
+.dccache

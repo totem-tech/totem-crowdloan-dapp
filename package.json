@@ -11,15 +11,32 @@
     }
   ],
   "scripts": {
-    "start": "webpack-dev-server",
-    "build": "webpack --mode production"
+    "build": "rm -rf dist && DIST_DIR='dist' DOT_ENV_PATH='.env' webpack --mode production",
+    "build-local": "rm -rf dist-local && DIST_DIR='dist-local' DOT_ENV_PATH='.env.local' webpack --mode development",
+    "build-staging": "rm -rf dist-staging && DIST_DIR='dist-staging' DOT_ENV_PATH='.env.staging' webpack --mode development",
+    "start": "DOT_ENV_PATH='.env.local' webpack-dev-server",
+    "test": "echo \"No test specified\""
   },
   "dependencies": {
+    "@emotion/react": "^11.7.1",
+    "@emotion/styled": "^11.6.0",
+    "@mui/icons-material": "^5.2.5",
+    "@mui/material": "^5.2.7",
+    "@polkadot/api": "^7.2.1",
+    "@polkadot/extension-dapp": "^0.42.6",
+    "@polkadot/keyring": "^8.2.2",
+    "@polkadot/util": "^3.7.1",
+    "@polkadot/util-crypto": "^3.7.1",
+    "bip39": "^3.0.4",
+    "buffer": "^6.0.3",
     "prop-types": "^15.7.2",
     "react": "^17.0.2",
     "react-dom": "^17.0.2",
     "react-router-dom": "^6.0.2",
-    "semantic-ui-react": "^2.0.4"
+    "regenerator-runtime": "^0.13.9",
+    "rxjs": "^7.4.0",
+    "socket.io-client": "^3.0.4",
+    "web3-utils": "^1.6.1"
   },
   "devDependencies": {
     "@babel/core": "^7.16.0",
@@ -28,8 +45,13 @@
     "@babel/preset-env": "^7.16.0",
     "@babel/preset-react": "^7.16.0",
     "babel-loader": "^8.2.3",
+    "copy-webpack-plugin": "^10.2.0",
     "css-loader": "^6.5.1",
+    "dotenv-webpack": "^7.0.3",
     "html-webpack-plugin": "^5.5.0",
+    "ignore-loader": "^0.1.2",
+    "lodash-webpack-plugin": "^0.11.6",
+    "stream-browserify": "^3.0.0",
     "style-loader": "^3.3.1",
     "webpack": "^5.64.1",
     "webpack-cli": "^4.9.1",
