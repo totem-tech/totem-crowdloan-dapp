@@ -86,7 +86,7 @@ export class ModalService {
         closeButton = closeBtnProps !== null && {
             ...closeBtnProps,
             children: 'Cancel',
-            onClick: (...args) => isFn(closeBtnProps.onClick) && closeBtnProps.onClick(...args),
+            onClick: (...args) => isFn(closeBtnProps?.onClick) && closeBtnProps.onClick(...args),
         }
         confirmButton = confirmBtnProps !== null && {
             ...confirmBtnProps || {},

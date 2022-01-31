@@ -3,25 +3,32 @@ import { BehaviorSubject } from "rxjs"
 import { colors, InputAdornment } from '@mui/material'
 import FormBuilder from "../../components/form/FormBuilder"
 import { findInput } from '../../components/form/InputCriteriaHint'
-import { translated } from '../../utils/languageHelper'
 import Message, { STATUS } from '../../components/Message'
 import modalService from '../../components/modal/modalService'
+import { getUser } from '../../utils/chatClient'
+import { translated } from '../../utils/languageHelper'
 import identityHelper from '../../utils/substrate/identityHelper'
-import { arrSort, deferred, textEllipsis } from '../../utils/utils'
+import { arrSort, deferred, objToUrlParams, textEllipsis } from '../../utils/utils'
 import Balance from '../blockchain/Balance'
 import enableExtionsion from '../blockchain/enableExtension'
 import blockchainHelper from '../blockchain/blockchainHelper'
 import init from '../messaging'
-import { getUser } from '../../utils/chatClient'
 
-const PLEDGE_PERCENTAGE = 0.1
+const PLEDGE_PERCENTAGE = 0.1 // 10%
 const [texts, textsCap] = translated({
-    amtContdLabel: 'Amount you already contributed',
-    amtPlgLabel: 'Amount you would like to pledge',
-    amtPlgLabelDetails: 'You can pledge maximum 10% of your total contribution',
-    amtToContLabel: 'Amount you would like to contribute now',
-    amtToContLabelDetails: 'You can always come back and contribute as many times as you like before the end of the crowdloan',
-    enterAnAmount: 'Enter an amount',
+    amtContdLabel: 'amount you already contributed',
+    amtPlgLabel: 'amount you would like to pledge',
+    amtPlgLabelDetails: 'you can pledge maximum 10% of your total contribution',
+    amtToContLabel: 'amount you would like to contribute now',
+    amtToContLabelDetails: 'you can always come back and contribute as many times as you like before the end of the crowdloan',
+    enterAnAmount: 'enter an amount',
+    errAccount1: 'in order to use the Totem Crowdloan DApp, you must create a Totem.Live account first.',
+    errAccount2: 'create an account here.',
+    errAccount3: 'alternatively, if you already have an account backup file, you can restore it.',
+    errAccount4: 'restore account',
+    errAmtMax: 'please enter an amount smaller or equal to',
+    errAmtMin: 'please enter a number greater than',
+    errBackup: 'Please create a backup of your account.',
     idLabel: 'select your blockchain identity',
     idPlaceholder: 'select an identity',
 }, true)
@@ -55,33 +62,53 @@ export default function CrowdloanForm(props) {
                 const { id } = getUser() || {}
                 const redirectTo = window.location.href
                 const appUrl = process.env.REACT_APP_TOTEM_APP_URL
-                const urlCreate = `${appUrl}?form=registration&redirectTo=${redirectTo}`
-                const urlRestore = `${appUrl}?form=restore&redirectTo=${redirectTo}`
-                const error = !id && {
+                const getUrl = (params = {}) => `${appUrl}?${objToUrlParams(params)}`
+
+                const urlCreate = getUrl({ form: 'registration', redirectTo })
+                const urlRestore = getUrl({ form: 'restore', redirectTo })
+                // check if user is registered
+                let error = !id && {
                     status: STATUS.warning,
                     text: (
                         <div>
-                            In order to use the Totem Crowdloan DApp, you must create a Totem.Live account first.
-                            <a href={urlCreate}>Create an account here.</a>
+                            {textsCap.errAccount1 + ''}
+                            <a href={urlCreate}>{textsCap.errAccount2}</a>
 
                             <br />
                             <br />
-                            Alternatively, if you already have an account backup file, you can restore it.
-                            {' '}<a href={urlRestore}>Restore account</a>
+                            {textsCap.errAccount3 + ' '}
+                            <a href={urlRestore}>{textsCap.errAccount4}</a>
                         </div>
                     )
                 }
+                // check if user has created a backup of their account
+                if (!error) {
+                    const all = identityHelper.getAll()
+                    const allBackedUp = all.every(x => !!x['fileBackupTS'])
+                    const backupUrl = getUrl({
+                        form: 'backup',
+                        confirmed: 'yes', // skips confirmation and starts backup file download immediately
+                        redirectTo,
+                    })
+                    error = !allBackedUp && {
+                        status: STATUS.warning,
+                        text: (
+                            <div>
+                                <a href={backupUrl}>{textsCap.errBackup}</a>
+                            </div>
+                        )
+                    }
+                }
                 setState({
                     error,
-                    loading: false
+                    loading: false,
                 })
             })
             .catch(console.error)
     }, [])
 
-    if (state.error) return (
-        <Message {...state.error} />
-    )
+    if (state.error) return <Message {...state.error} />
+
     return (
         <FormBuilder {...{
             rxInputs,
@@ -134,6 +161,9 @@ export const getRxInputs = () => {
         pledgeIn.step = (pledgeIn.max || 0) < 10
             ? pledgeIn.max / 10
             : 1
+        pledgeIn.value = pledgeIn.value > pledgeIn.max
+            ? pledgeIn.max
+            : pledgeIn.value
         return true
     }
     const inputs = [
@@ -158,8 +188,8 @@ export const getRxInputs = () => {
         },
         {
             customMessages: {
-                max: 'Please enter an amount smaller or equal to',
-                min: 'Please enter a number greater than',
+                max: textsCap.errAmtMax,
+                min: textsCap.errAmtMin,
             },
             InputProps: {
                 // Visibility toggle icon/button
