@@ -2,8 +2,9 @@ import React, { useEffect, useState } from 'react'
 import { CircularProgress } from '@mui/material'
 import { Error } from '@mui/icons-material'
 import { unsubscribe } from '../../utils/reactHelper'
-import { isArr } from '../../utils/utils'
-import _blockchainHelper, { BlockchainHelper } from './blockchainHelper'
+import { isArr, isFn } from '../../utils/utils'
+import bcHelper, { BlockchainHelper } from './blockchainHelper'
+import { formatBalance } from './formatBalance'
 
 /**
  * @name    Balance
@@ -13,12 +14,17 @@ import _blockchainHelper, { BlockchainHelper } from './blockchainHelper'
  * @param   {String}            props.address   
  * @param   {BlockchainHelper}  props.blockchainHelper (optional)
  */
-export default function Balance({ address, blockchainHelper = _blockchainHelper }) {
-    address = isArr(address)
-        ? address[0]
-        : address
-    const [balance, loading, error] = useBalance(address, true, blockchainHelper)[0]
-
+export default function Balance(props) {
+    let {
+        address,
+        blockchainHelper = bcHelper,
+        format = true,
+    } = props
+    const [balance, loading, error] = useBalance(
+        address,
+        format,
+        blockchainHelper,
+    )[0]
 
     if (error) return <Error color='error' size={18} />
     if (loading) return <CircularProgress color='warning' size={18} />
@@ -30,13 +36,13 @@ export default function Balance({ address, blockchainHelper = _blockchainHelper 
  * @summary React hook to automatiicaly retrieve identity balance(s)
  * 
  * @param   {Array|String}      address          SS58 decoded address
- * @param   {Boolean}           format           (optional) whether to format the balance as string
+ * @param   {Boolean|String}    asString         (optional) true/false/'shorten'
  *                                               Default: `true`
- * @param   {BlockchainHelper}  blockchainHelper (optional) 
+ * @param   {BlockchainHelper}  blockchainHelper (optional) Default: global blockchainHelper
  * 
  * @returns {Array} result  [balance (Array|String), loading, error]
  */
-export const useBalance = (address, format = true, blockchainHelper = _blockchainHelper) => {
+export const useBalance = (address, asString = true, blockchainHelper = bcHelper) => {
     const [[balance, loading, error], setBalance] = useState([0, true, null])
 
     useEffect(() => {
@@ -47,20 +53,20 @@ export const useBalance = (address, format = true, blockchainHelper = _blockchai
 
             const balance = !isArr(result)
                 // single result
-                ? formatAmount(
+                ? formatBalance(
                     result.free,
-                    format,
+                    asString,
                     blockchainHelper,
                 )
                 // multiple results
                 : result.map(x =>
-                    formatAmount(
+                    formatBalance(
                         x.free,
-                        format,
+                        asString,
                         blockchainHelper,
                     )
                 )
-            setBalance([balance, false])
+            setBalance([balance, false, null])
         }
         const fetch = async () => {
             sub = await blockchainHelper
@@ -83,18 +89,4 @@ export const useBalance = (address, format = true, blockchainHelper = _blockchai
     }, [address])
 
     return [[balance, loading, error], setBalance]
-}
-
-export const formatAmount = (amount, format = false, blockchainHelper = _blockchainHelper) => {
-    const { unit } = blockchainHelper
-    const unitAmount = unit.amount
-    amount = unitAmount > 1
-        ? amount / unitAmount
-        : amount
-
-    if (!format) return amount
-
-    const { decimals, name } = unit
-    const formatted = `${amount.toFixed(decimals)} ${name}`
-    return formatted
 }

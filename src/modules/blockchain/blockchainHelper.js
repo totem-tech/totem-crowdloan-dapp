@@ -11,7 +11,7 @@ export default new _BlockchainHelper(
     {},
     {
         amount: parseInt(process.env.REACT_APP_UNIT_AMOUNT || '') || undefined,
-        decimals: parseInt(process.env.REACT_APP_UNIT_DECIMALS || '0'),
+        decimals: parseInt(process.env.REACT_APP_UNIT_DECIMALS || '2'),
         name: process.env.REACT_APP_UNIT_NAME || 'DOT'
     },
 )

@@ -6,10 +6,11 @@ import {
     InputLabel,
     MenuItem,
     Select,
+    Slider,
     TextField,
     Typography,
 } from '@mui/material'
-import { deferred, isFn } from '../../utils/utils'
+import { deferred, hasValue, isDefined, isFn } from '../../utils/utils'
 import { useRxSubject } from '../../utils/reactHelper'
 import InputCriteriaHint from './InputCriteriaHint'
 import Message from '../Message'
@@ -26,16 +27,16 @@ export default function FormInput(props) {
         fullWidth = true,
         id,
         ignoredAttrs = [],
-        inlineLabel = false,
+        // inlineLabel = false,
         label,
         labelDetails,
         labelId,
         message,
         name,
         onBlur,
+        onChange,
         onFocus,
         options = [],
-        placeholder,
         readOnly = false,
         required,
         rxOptions,
@@ -47,6 +48,9 @@ export default function FormInput(props) {
         value,
         variant,
     } = props
+    const gotValue = hasValue(value)
+    // Prioritize validation message if input has a value
+    message = gotValue && validation?.message || message
     options = useRxSubject(rxOptions || options, rxOptionsModifier)[0]
     style.cursor = disabled
         ? 'no-drop'
@@ -56,8 +60,6 @@ export default function FormInput(props) {
     let inputEl = ''
     const { hideOnBlur } = validation || {}
     const [isFocused, setIsFocused] = useState(false)
-    const gotValue = ![null, undefined, '']
-        .includes(value)
     const attrs = {
         ...props,
         error: error || (gotValue && valid === false),
@@ -67,6 +69,16 @@ export default function FormInput(props) {
             setIsFocused(false);
             isFn(onBlur) && onBlur(...args)
         }, 100),
+        onChange: (event) => {
+            let { target: { value } = {} } = event
+            if (type === 'number') {
+                value = value === ''
+                    ? '' // prevents setting 0 after clearing the input
+                    : Number(value)
+                event.target.value = value
+            }
+            isFn(onChange) && onChange(event, value)
+        },
         onFocus: deferred((...args) => {
             setIsFocused(true);
             isFn(onFocus) && onFocus(...args)
@@ -79,9 +91,8 @@ export default function FormInput(props) {
     attrs.value = attrs.value === undefined
         ? ''
         : attrs.value
-    // prevent local properties
+    // prevent local properties being passed to input Component
     ignoredAttrs.forEach(key => delete attrs[key])
-    // if (!inlineLabel) delete attrs.label
 
     label = !!label && (
         <InputLabel {...{
@@ -102,9 +113,12 @@ export default function FormInput(props) {
             )}
             {!!labelDetails && (
                 <div style={{
+                    color: 'grey',
                     fontWeight: 'normal',
-                    margin: '-5px 0',
+                    lineHeight: 1,
+                    margin: '-5px 0 0',
                     paddingTop: 3,
+                    whiteSpace: 'pre-wrap',
                 }}>
                     <small>{labelDetails}</small>
                 </div>
@@ -114,6 +128,7 @@ export default function FormInput(props) {
     delete attrs.label
 
     switch (type) {
+        // ToDo:
         // case 'group':
         //     const { containerProps, inputs = [] } = props
         //     return (
@@ -187,6 +202,20 @@ export default function FormInput(props) {
                 </>
             )
             break
+        case 'slider':
+            Component = Component || Slider
+            attrs.max = isDefined(attrs.max)
+                ? attrs.max
+                : 100
+            attrs.min = isDefined(attrs.min)
+                ? attrs.min
+                : 0
+            attrs.value = attrs.value || 0
+            // remove unwanted props
+            delete attrs.error
+            delete attrs.fullWidth
+            inputEl = <Component {...attrs} />
+            break
         case 'custom':
         // Password type and all other types accepted by TextField
         default:
@@ -244,8 +273,10 @@ export default function FormInput(props) {
 }
 FormInput.defaultProps = {
     ignoredAttrs: [
+        '_data', // a placeholder to store non-input data
         'allowDeselect',
         'Component',
+        'customMessages',
         'ignoredAttrs',
         'inlineLabel',
         'labelDetails',

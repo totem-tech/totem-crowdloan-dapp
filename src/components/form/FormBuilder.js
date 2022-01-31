@@ -3,18 +3,18 @@ import PropTypes from 'prop-types'
 import { BehaviorSubject } from 'rxjs'
 import { Button } from '@mui/material'
 import { useRxSubject } from '../../utils/reactHelper'
-import { isDefined, isFn } from '../../utils/utils'
+import { hasValue, isDefined, isFn } from '../../utils/utils'
 import Message, { STATUS } from '../Message'
 import { toProps } from '../reactUtils'
 import modalService from '../modal/modalService'
 import FormInput from './FormInput'
 import { findInput, getValues, validateInput } from './InputCriteriaHint'
 
-const attachName = inputs => (inputs || [])
+const attachName = values => inputs => (inputs || [])
     .map((input, i) => {
         input.name = input.name || `input-${i}`
         // validate inputs whenever rxInputs change is triggered // ToDo: remove redundant manual validations elsewhere
-        validateInput(input)
+        validateInput(input, inputs, values)
         return input
     })
 export default function FormBuilder(props) {
@@ -30,28 +30,25 @@ export default function FormBuilder(props) {
         rxInputs,
         rxValues: _rxValues,
         submitButton,
+        submitDisabled,
         values: valuesOriginal = {},
     } = props
-    const [inputs] = useRxSubject(rxInputs, attachName)
     const [rxValues] = useState(() => _rxValues || new BehaviorSubject(valuesOriginal))
     const [values] = useRxSubject(rxValues, x => x || {})
+    const [inputs] = useRxSubject(rxInputs, attachName(values))
+    loading = loading
+        || message?.status === STATUS.loading
 
-    const handleInputChange = name => async (event) => {
+    const handleInputChange = name => async (event, value) => {
         const inputs = rxInputs.value
         const input = findInput(name, inputs)
-        let { value } = event.target
         const { onChange: inputOnChange } = input
         const triggerChange = (values) => {
-            validateInput(input)
+            validateInput(input, inputs, values)
             values = values || getValues(inputs)
             // update state
             rxInputs.next([...inputs])
             rxValues.next(values)
-        }
-
-        if (value && input.type === 'number') {
-            // converts number field's default value type string to number
-            value = eval(value) || ''
         }
         input.value = value
         triggerChange()
@@ -65,7 +62,7 @@ export default function FormBuilder(props) {
 
         if (!isFn(formOnChange)) return doTrigger && triggerChange()
 
-        const formValid = inputs.every(x => !checkInput(x))
+        const formValid = inputs.every(x => !checkInputInvalid(x, hiddenInputs))
         doTrigger = await formOnChange(
             formValid,
             doTrigger
@@ -84,7 +81,7 @@ export default function FormBuilder(props) {
         try {
             const allOk = !loading
                 && !submitDisabled
-                && !inputs.find(x => checkInput(x))
+                && !inputs.find(x => checkInputInvalid(x, hiddenInputs))
             isFn(onSubmit) && await onSubmit(
                 allOk,
                 getValues(inputs),
@@ -98,68 +95,15 @@ export default function FormBuilder(props) {
         }
     }
 
-    /**
-     * @name    checkInput
-     * @summary checks if everything is okay with an input: value is valid, not loading, not hidden....
-     * 
-     * @param   {Object} input 
-     * 
-     * @returns {Boolean} true: submit button should be disabled
-     */
-    const checkInput = input => {
-        let { error, hidden, loading, name, required, type, value, valid } = input
-        const ignore = hidden
-            || ['html', 'group'].includes(type)
-            || hiddenInputs.includes(name)
-        if (ignore) return console.log({ ignored: name })
-        if (error || loading) return true
-
-        const empty = [undefined, null, ''].includes(value)
-        // value must be valid if required or not empty
-        return (required || !empty) && !valid
-    }
-
-    loading = loading
-        || message?.status === STATUS.loading
-    // one or more input's value has changed
-    const checkValuesChanged = () => inputs
-        .find(({ hidden, name }) => {
-            if (hidden) return
-            const newValue = isDefined(values[name])
-                ? values[name]
-                : ''
-            const oldValue = isDefined(valuesOriginal[name])
-                ? valuesOriginal[name]
-                : ''
-            return newValue !== oldValue
-        })
-
     // disable submit button if one of the following is true:
     // 1. none of the input's value has changed
     // 2. message status or form is "loading" (indicates submit or some input validation is in progress)
     // 3. one or more inputs contains invalid value (based on validation criteria)
     // 4. one or more required inputs does not contain a value
-    const submitDisabled = loading
-        || !!inputs.find(checkInput)
-        || !checkValuesChanged()
-
-    window.debug = {
-        loading,
-        submitDisabled,
-        inputs,
-        valuesOriginal,
-        values,
-        checkInput,
-        checkValuesChanged,
-    }
-    // console.log({
-    //     submitDisabled,
-    //     inputs,
-    //     valuesOriginal,
-    //     values,
-    //     valid: inputs.find(checkInput),
-    //     checkValuesChanged: checkValuesChanged(),
-    // })
+    submitDisabled = submitDisabled
+        || loading
+        || !!inputs.find(x => checkInputInvalid(x, hiddenInputs))
+        || !checkValuesChanged(inputs, values, valuesOriginal)
 
     return (
         <div {...{
@@ -170,7 +114,12 @@ export default function FormBuilder(props) {
             ...formProps,
         }}>
             {inputs
-                .filter(({ hidden, name }) => name && !hidden && !hiddenInputs.includes(name))
+                .filter(({ hidden, name }) => {
+                    const hide = hidden
+                        || hiddenInputs.includes(name)
+                        || !name
+                    return !hide
+                })
                 .map(input => (
                     <FormInput {...{
                         ...input,
@@ -201,3 +150,41 @@ export default function FormBuilder(props) {
 FormBuilder.defaultProps = {
     submitButton: 'Submit',
 }
+
+/**
+ * @name    checkInput
+ * @summary checks if everything is okay with an input: value is valid, not loading, not hidden....
+ * 
+ * @param   {Object} input 
+ * 
+ * @returns {Boolean} true: submit button should be disabled
+ */
+const checkInputInvalid = (input, hiddenInputs = []) => {
+    let { error, hidden, loading, name, required, type, value, valid } = input
+    const ignore = hidden
+        || ['html', 'group'].includes(type)
+        || hiddenInputs.includes(name)
+    if (ignore) return false
+    if (error || loading) return true
+
+    const isValid = valid !== false
+    const isEmpty = !hasValue(value) //[undefined, null, ''].includes(value)
+    // value must be valid if not empty or required field
+    const invalid = !isEmpty
+        ? !isValid
+        : required && !valid
+
+    return invalid
+}
+// one or more input's value has changed
+const checkValuesChanged = (inputs, values = {}, originalValue = {}) => inputs
+    .find(({ hidden, name }) => {
+        if (hidden) return
+        const newValue = isDefined(values[name])
+            ? values[name]
+            : ''
+        const oldValue = isDefined(originalValue[name])
+            ? originalValue[name]
+            : ''
+        return newValue !== oldValue
+    })

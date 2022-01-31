@@ -1,31 +1,34 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { BehaviorSubject } from "rxjs"
-import { colors } from '@mui/material'
+import { colors, InputAdornment } from '@mui/material'
 import FormBuilder from "../../components/form/FormBuilder"
+import { findInput } from '../../components/form/InputCriteriaHint'
+import { translated } from '../../utils/languageHelper'
+import Message, { STATUS } from '../../components/Message'
 import modalService from '../../components/modal/modalService'
 import identityHelper from '../../utils/substrate/identityHelper'
+import { arrSort, deferred, textEllipsis } from '../../utils/utils'
 import Balance from '../blockchain/Balance'
 import enableExtionsion from '../blockchain/enableExtension'
-import { findInput } from '../../components/form/InputCriteriaHint'
-import { STATUS } from '../../components/Message'
-import { arrSort, deferred, textEllipsis } from '../../utils/utils'
+import blockchainHelper from '../blockchain/blockchainHelper'
+import init from '../messaging'
+import { getUser } from '../../utils/chatClient'
 
-export default function CrowdloanForm(props) {
-    const rxInputs = useState(getRxInputs)[0]
+const PLEDGE_PERCENTAGE = 0.1
+const [texts, textsCap] = translated({
+    amtContdLabel: 'Amount you already contributed',
+    amtPlgLabel: 'Amount you would like to pledge',
+    amtPlgLabelDetails: 'You can pledge maximum 10% of your total contribution',
+    amtToContLabel: 'Amount you would like to contribute now',
+    amtToContLabelDetails: 'You can always come back and contribute as many times as you like before the end of the crowdloan',
+    enterAnAmount: 'Enter an amount',
+    idLabel: 'select your blockchain identity',
+    idPlaceholder: 'select an identity',
+}, true)
 
-    return (
-        <FormBuilder {...{
-            rxInputs,
-            onSubmit: (_, values) => modalService.confirm({
-                content: JSON.stringify(values, null, 4),
-                // onConfirm: alert(values)
-            }, 'test'),
-            ...props
-        }} />
-    )
-}
-CrowdloanForm.defaultProps = {
-    submitButton: 'Submit!'
+const logos = {
+    polkadot: 'images/polkadot-logo-circle.png',
+    totem: 'images/logos/button-288-colour.png',
 }
 
 export const inputNames = {
@@ -34,48 +37,167 @@ export const inputNames = {
     amountPledge: 'amountPledge',
     identity: 'identity',
 }
+
+export default function CrowdloanForm(props) {
+    const rxInputs = useState(getRxInputs)[0]
+    const [state, setState] = useState({
+        error: {
+            status: STATUS.loading,
+            text: '',
+        },
+        loading: true,
+    })
+
+    useEffect(() => {
+        // on load check if user has already registered
+        init()
+            .then(client => {
+                const { id } = getUser() || {}
+                const redirectTo = window.location.href
+                const appUrl = process.env.REACT_APP_TOTEM_APP_URL
+                const urlCreate = `${appUrl}?form=registration&redirectTo=${redirectTo}`
+                const urlRestore = `${appUrl}?form=restore&redirectTo=${redirectTo}`
+                const error = !id && {
+                    status: STATUS.warning,
+                    text: (
+                        <div>
+                            In order to use the Totem Crowdloan DApp, you must create a Totem.Live account first.
+                            <a href={urlCreate}>Create an account here.</a>
+
+                            <br />
+                            <br />
+                            Alternatively, if you already have an account backup file, you can restore it.
+                            {' '}<a href={urlRestore}>Restore account</a>
+                        </div>
+                    )
+                }
+                setState({
+                    error,
+                    loading: false
+                })
+            })
+            .catch(console.error)
+    }, [])
+
+    if (state.error) return (
+        <Message {...state.error} />
+    )
+    return (
+        <FormBuilder {...{
+            rxInputs,
+            onSubmit: (_, values) => modalService.confirm({
+                content: JSON.stringify(values, null, 4),
+                // onConfirm: alert(values)
+            }, 'test'),
+            ...props,
+            ...state,
+        }} />
+    )
+}
+CrowdloanForm.defaultProps = {
+    submitButton: 'Submit!'
+}
+
 export const getRxInputs = () => {
     const rxInputs = new BehaviorSubject()
+    const handleAmountTCChange = (values, inputs) => {
+        const amountContributed = values[inputNames.amountContributed] || 0
+        const amountToContribute = values[inputNames.amountToContribute] || 0
+        const total = amountContributed + amountToContribute
+        const pledgeIn = findInput(inputNames.amountPledge, inputs)
+        const disabled = total <= 0
+        pledgeIn.disabled = disabled
+        pledgeIn.max = disabled
+            ? 0
+            : eval((total * PLEDGE_PERCENTAGE).toFixed(2)) || 0
+        pledgeIn.marks = !!pledgeIn.max
+            && [
+                {
+                    label: 0,
+                    value: 0,
+                },
+                ...new Array(4)
+                    .fill(0)
+                    .map((_, i) => {
+                        let value = (pledgeIn.max / 5) * (i + 1)
+                        value = eval(value.toFixed(2))
+                        return {
+                            label: value,
+                            value,
+                        }
+                    }),
+                {
+                    label: pledgeIn.max,
+                    value: pledgeIn.max,
+                },
+            ]
+        pledgeIn.step = (pledgeIn.max || 0) < 10
+            ? pledgeIn.max / 10
+            : 1
+        return true
+    }
     const inputs = [
         {
             inlineLabel: true,
-            label: 'Select your contribution identity',
+            label: textsCap.idLabel,
             labelDetails: '',
             name: inputNames.identity,
             options: [],
-            placeholder: 'Select an identity',
+            placeholder: textsCap.idPlaceholder,
             rxOptions: identityHelper.rxIdentities,
             rxOptionsModifier: identityOptionsModifier(rxInputs),
             required: true,
             type: 'select',
         },
         {
-            label: 'Amount you contributed',
+            hidden: true,
+            label: textsCap.amtContdLabel,
             name: inputNames.amountContributed,
-            placeholder: 'Enter amount of DOT',
-            readOnly: true,
+            placeholder: textsCap.enterAnAmount,
             type: 'number',
         },
         {
-            label: 'Enter an amount you would like to contribute',
+            customMessages: {
+                max: 'Please enter an amount smaller or equal to',
+                min: 'Please enter a number greater than',
+            },
+            InputProps: {
+                // Visibility toggle icon/button
+                endAdornment: (
+                    <InputAdornment position='end'>
+                        <b>{blockchainHelper?.unit?.name || 'DOT'}</b>
+                    </InputAdornment>
+                ),
+            },
+            label: textsCap.amtToContLabel,
+            labelDetails: textsCap.amtToContLabelDetails,
+            max: 1000000,
+            min: 5,
             name: inputNames.amountToContribute,
-            placeholder: 'Enter amount of DOT',
+            onChange: handleAmountTCChange,
+            placeholder: textsCap.enterAnAmount,
             required: true,
             type: 'number',
         },
         {
-            label: 'Enter an amount you would like to pledge',
-            labelDetails: 'Maximum 10% of your total contribution',
+            disabled: true,
+            valueLabelDisplay: 'auto',
+            label: textsCap.amtPlgLabel,
+            labelDetails: textsCap.amtPlgLabelDetails,
+            min: 0,
             name: inputNames.amountPledge,
-            placeholder: 'Enter amount of DOT',
-            type: 'number',
+            type: 'slider',
         },
     ]
 
     enableExtionsion()
-        .then(console.log, console.error)
+        .catch(console.error)
     rxInputs.next(inputs)
     return rxInputs
+}
+
+const handleSumbit = rxInputs => () => {
+    // check identity  balance and warn user about existential (if needed)
 }
 
 // Identity options modifier
@@ -89,59 +211,65 @@ const identityOptionsModifier = rxInputs => identities => {
         }))
 
     options = arrSort(options, 'name')
-        .map(({ address, name, injected }) => ({
-            key: address,
-            text: (
+        .map(({ address, name, injected }) => {
+            const logoProps = injected
+                ? { // Polkadot logo
+                    src: logos.polkadot,
+                    style: {
+                        margin: '-5px -5px -5px 0',
+                        maxWidth: 20,
+                        paddingRight: 10,
+                    },
+                }
+                : { // Totem logo
+                    src: logos.totem,
+                    style: {
+                        margin: '-7px -7px -7px -3px',
+                        maxWidth: 27,
+                        paddingRight: 8,
+                    },
+                }
+
+            const text = (
                 <div style={{ width: '100%' }}>
                     <div style={{ float: 'left' }}>
-                        <img {...injected
-                            ? { // Polkadot logo
-                                src: 'images/polkadot-logo-circle.png',
-                                style: {
-                                    margin: '-5px -5px -5px 0',
-                                    maxWidth: 20,
-                                    paddingRight: 10,
-                                },
-                            }
-                            : { // Totem logo
-                                src: 'images/logos/button-288-colour.png',
-                                style: {
-                                    margin: '-7px -7px -7px -3px',
-                                    maxWidth: 27,
-                                    paddingRight: 8,
-                                },
-                            }
-                        } />
+                        <img {...logoProps} />
                         {textEllipsis(name, 20, 3, false)}
                     </div>
                     <div style={{
                         color: colors.grey[500],
                         float: 'right',
                     }}>
-                        <Balance {...{
-                            address,
-                            key: address,
-                        }} />
+                        <Balance address={address} />
                     </div>
                 </div>
-            ),
-            value: address,
-        }))
+            )
 
-    deferredCheckExtenstion(rxInputs)
+            return {
+                key: address,
+                text,
+                value: address,
+            }
+        })
+
+    checkExtenstion(rxInputs)
     return options
 }
 
-// Check if extension is enabled and any indentities were injected
-const deferredCheckExtenstion = deferred(rxInputs => {
+/**
+ * @name    checkExtenstion
+ * @summary Check if extension is enabled and any indentities were injected
+ * 
+ * @prop    {*} rxInputs    RxJS subject containing array of input definitions
+ */
+const checkExtenstion = deferred(rxInputs => {
     if (!rxInputs.value) return
     const injected = identityHelper
         .search({ uri: null }, true)
     const identityIn = findInput(inputNames.identity, rxInputs)
     identityIn.message = injected.size > 0
         ? null
-        // extension is either not installed/not enabled or user rejected to allow access
-        : {
+        : { // extension is either not installed, not enabled or user rejected to allow access
             status: STATUS.warning,
             text: (
                 <div>
@@ -159,7 +287,7 @@ const deferredCheckExtenstion = deferred(rxInputs => {
                         <li>Click on "Manage Website Access"</li>
                         <li>Enable access for {window.location.href}</li>
                     </ol>
-                    Alternatively, you can continue using the DApp with your localy stored Totem identities (not recommended).
+                    Alternatively, you can continue using the DApp with your localy stored Totem identities (<b>not recommended</b>).
                 </div>
             ),
         }

@@ -8,7 +8,9 @@ import {
     ListItemText,
 } from '@mui/material'
 import { Cancel, CheckCircleSharp } from '@mui/icons-material'
-import { isArr, isSubjectLike } from '../../utils/utils'
+import { isArr, isFn, isSubjectLike } from '../../utils/utils'
+import { TYPES, validate as _validate } from '../../utils/validator'
+import { STATUS } from '../Message'
 
 const { green, grey, red } = colors
 
@@ -148,16 +150,48 @@ export const handleInputChange = (setState, field = {}) => e => {
  * 
  * @returns {Object} input
  */
-export const validateInput = input => {
-    const { validation, value } = input
-    const criterias = applyCriterias(validation?.criterias, value)
-    if (validation) {
+export const validateInput = (input, values, inputs) => {
+    input.validation = input.validation || {}
+    const {
+        type,
+        validation,
+        value,
+    } = input
+    validation.criterias = validation.criterias || []
+    let {
+        criterias,
+        type: typeAlt,
+        validate,
+    } = validation
+    const valid = []
+    let err
+
+    if (criterias?.length > 0) {
+        criterias = applyCriterias(criterias, value)
         input.validation = {
             ...validation,
             criterias,
         }
+        valid.push(!criterias?.find(x => !x.valid))
     }
-    input.valid = !criterias?.find(x => !x.valid)
+    if (!!TYPES[typeAlt || type]) {
+        err = _validate(value, input)
+        valid.push(!err)
+    }
+
+    if (!err && isFn(validate)) {
+        err = validate(values, inputs, input)
+        valid.push(!err)
+    }
+    // validation error message
+    validation.message = !!err && {
+        status: STATUS.error,
+        text: err,
+    }
+
+    input.valid = valid.length == 0
+        ? undefined
+        : valid.every(x => !!x)
     return input
 }
 
