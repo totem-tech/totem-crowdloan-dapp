@@ -81,6 +81,7 @@ export default function CrowdloanForm(props) {
                         </div>
                     )
                 }
+
                 // check if user has created a backup of their account
                 if (!error) {
                     const all = identityHelper.getAll()
