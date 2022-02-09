@@ -6,7 +6,7 @@ import { subjectAsPromise } from '../../utils/reactHelper'
 
 const SERVER_URL = process.env.REACT_APP_MESSAGING_SERVER_URL
 let client
-export default async function init() {
+export default async function _getClient() {
     if (!SERVER_URL) throw new Error('Missing messaging server websocket URL')
 
     if (!client) {

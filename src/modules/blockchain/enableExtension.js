@@ -1,3 +1,4 @@
+import { cryptoWaitReady } from '@polkadot/util-crypto'
 import identityHelper from '../../utils/substrate/identityHelper'
 import { subjectAsPromise } from '../../utils/reactHelper'
 import { isNodeJS } from '../../utils/utils'
@@ -12,5 +13,7 @@ export default async function enableExtionsion() {
     )
 
     console.log('Enable extension')
+
+    await cryptoWaitReady()
     return await identityHelper.enableExtionsion('Totem Crowdloan DApp')
 }

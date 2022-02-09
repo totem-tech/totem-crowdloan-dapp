@@ -12,7 +12,8 @@ import { arrSort, deferred, objToUrlParams, textEllipsis } from '../../utils/uti
 import Balance from '../blockchain/Balance'
 import enableExtionsion from '../blockchain/enableExtension'
 import blockchainHelper from '../blockchain/blockchainHelper'
-import init from '../messaging'
+import getClient from '../messaging'
+import { Settings } from '@mui/icons-material'
 
 const PLEDGE_PERCENTAGE = 0.1 // 10%
 const [texts, textsCap] = translated({
@@ -28,9 +29,10 @@ const [texts, textsCap] = translated({
     errAccount4: 'restore account',
     errAmtMax: 'please enter an amount smaller or equal to',
     errAmtMin: 'please enter a number greater than',
-    errBackup: 'Please create a backup of your account.',
+    errBackup: 'please download a backup of your Totem account',
     idLabel: 'select your blockchain identity',
     idPlaceholder: 'select an identity',
+    submit: 'submit',
 }, true)
 
 const logos = {
@@ -57,7 +59,7 @@ export default function CrowdloanForm(props) {
 
     useEffect(() => {
         // on load check if user has already registered
-        init()
+        getClient()
             .then(client => {
                 const { id } = getUser() || {}
                 const redirectTo = window.location.href
@@ -85,7 +87,10 @@ export default function CrowdloanForm(props) {
                 // check if user has created a backup of their account
                 if (!error) {
                     const all = identityHelper.getAll()
-                    const allBackedUp = all.every(x => !!x['fileBackupTS'])
+                    const allBackedUp = all.every(x =>
+                        !x.uri // consider extension identities as backed up
+                        || !!x.fileBackupTS
+                    )
                     const backupUrl = getUrl({
                         form: 'backup',
                         confirmed: 'yes', // skips confirmation and starts backup file download immediately
@@ -100,6 +105,7 @@ export default function CrowdloanForm(props) {
                         )
                     }
                 }
+
                 setState({
                     error,
                     loading: false,
@@ -115,15 +121,15 @@ export default function CrowdloanForm(props) {
             rxInputs,
             onSubmit: (_, values) => modalService.confirm({
                 content: JSON.stringify(values, null, 4),
-                // onConfirm: alert(values)
-            }, 'test'),
+                maxWidth: 'xs'
+            }, 'confirm-submit'),
             ...props,
             ...state,
         }} />
     )
 }
 CrowdloanForm.defaultProps = {
-    submitButton: 'Submit!'
+    submitButton: textsCap.submit
 }
 
 export const getRxInputs = () => {
@@ -148,6 +154,7 @@ export const getRxInputs = () => {
                     .fill(0)
                     .map((_, i) => {
                         let value = (pledgeIn.max / 5) * (i + 1)
+                        const decimals = value > 100 ? 0 : 2
                         value = eval(value.toFixed(2))
                         return {
                             label: value,
@@ -166,6 +173,12 @@ export const getRxInputs = () => {
             ? pledgeIn.max
             : pledgeIn.value
         return true
+    }
+    const handleIdentityChange = (values, inputs) => {
+        const identity = values[inputNames.identity]
+        if (!identity) return
+
+        // retrieve existing pledge amounts
     }
     const inputs = [
         {
@@ -314,9 +327,16 @@ const checkExtenstion = deferred(rxInputs => {
                     If you have previosly denied access from this site, please follow steps below:
                     <ol>
                         <li>Open the extension</li>
-                        <li>Click on the settings (cog icon)</li>
+                        <li>
+                            Click on
+                            <Settings style={{
+                                fontSize: 23,
+                                padding: 0,
+                                margin: '0 0 -7px 0',
+                            }} /> the settings icon
+                        </li>
                         <li>Click on "Manage Website Access"</li>
-                        <li>Enable access for {window.location.href}</li>
+                        <li>Enable access for {window.location.host}</li>
                     </ol>
                     Alternatively, you can continue using the DApp with your localy stored Totem identities (<b>not recommended</b>).
                 </div>

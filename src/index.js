@@ -23,6 +23,7 @@ ReactDOM.render(
         : <App />,
     document.getElementById('root'),
 )
+// ToDo: move to crowdloan form
 const connectBlockchain = async () => {
     const { api } = await blockchainHelper.getConnection()
     window.api = api
@@ -35,9 +36,12 @@ const connectBlockchain = async () => {
     )
     window.utils = {
         convert: require('./utils/convert'),
+        naclHelper: require('./utils/naclHelper'),
         number: require('./utils/number'),
         utils: require('./utils/utils')
     }
+    window['@polkadot/util-crypto'] = require('@polkadot/util-crypto')
+    window['@polkadot/util'] = require('@polkadot/util')
 }
 
 connectToMessagingServer()
