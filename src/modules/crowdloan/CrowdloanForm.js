@@ -19,13 +19,13 @@ const PLEDGE_PERCENTAGE = 0.1 // 10%
 const [texts, textsCap] = translated({
     amtContdLabel: 'amount you already contributed',
     amtPlgLabel: 'amount you would like to pledge',
-    amtPlgLabelDetails: 'you can pledge maximum 10% of your total contribution',
+    amtPlgLabelDetails: 'you can pledge maximum 10% of your total crowdloan contribution',
     amtToContLabel: 'amount you would like to contribute now',
     amtToContLabelDetails: 'you can always come back and contribute as many times as you like before the end of the crowdloan',
     enterAnAmount: 'enter an amount',
-    errAccount1: 'in order to use the Totem Crowdloan DApp, you must create a Totem.Live account first.',
+    errAccount1: 'in order to use and contribute to the Totem Kapex Crowdloan, you must create a Totem account first.',
     errAccount2: 'create an account here.',
-    errAccount3: 'alternatively, if you already have an account backup file, you can restore it.',
+    errAccount3: 'alternatively, if you already have an existing Totem account backup file, you can restore it.',
     errAccount4: 'restore account',
     errAmtMax: 'please enter an amount smaller or equal to',
     errAmtMin: 'please enter a number greater than',
@@ -36,8 +36,8 @@ const [texts, textsCap] = translated({
 }, true)
 
 const logos = {
-    polkadot: 'images/polkadot-logo-circle.png',
-    totem: 'images/logos/button-288-colour.png',
+    polkadot: 'images/polkadot-logo-circle.svg',
+    totem: 'images/logos/colour-t-logo.svg',
 }
 
 export const inputNames = {
