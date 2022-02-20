@@ -90,7 +90,7 @@ export class ModalService {
         }
         confirmButton = confirmBtnProps !== null && {
             ...confirmBtnProps || {},
-            children: 'Confirm',
+            children: confirmBtnProps.children || 'Confirm',
             onClick: (...args) => {
                 doConfirm(true)
                 isFn(confirmBtnProps?.onClick) && confirmBtnProps.onClick(...args)
@@ -101,7 +101,7 @@ export class ModalService {
             actionButtons: [
                 ...actionButtons,
                 confirmButton,
-            ],
+            ].filter(Boolean),
             closeButton,
             content,
             ignoredAttrs: [

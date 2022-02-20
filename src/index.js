@@ -4,6 +4,7 @@ import connectToMessagingServer from './modules/messaging'
 import blockchainHelper from './modules/blockchain'
 import App from './App'
 import { Typography } from '@mui/material'
+import { crowdloanHelper } from './modules/blockchain'
 
 console.log(`${process.env.REACT_APP_ENV} in ${process.env.NODE_ENV} mode`)
 
@@ -27,21 +28,20 @@ ReactDOM.render(
 const connectBlockchain = async () => {
     const { api } = await blockchainHelper.getConnection()
     window.api = api
-    window.blockchain = blockchainHelper
-    window.queryBlockchain = (func, args = [], multi, print = true) => blockchainHelper.query(
-        func,
-        args,
-        multi,
-        print,
-    )
-    window.utils = {
-        convert: require('./utils/convert'),
-        naclHelper: require('./utils/naclHelper'),
-        number: require('./utils/number'),
-        utils: require('./utils/utils')
-    }
-    window['@polkadot/util-crypto'] = require('@polkadot/util-crypto')
-    window['@polkadot/util'] = require('@polkadot/util')
+}
+window.blockchain = blockchainHelper
+window.crowdloanHelper = crowdloanHelper
+window.queryBlockchain = (func, args = [], multi, print = true) => blockchainHelper.query(
+    func,
+    args,
+    multi,
+    print,
+)
+window.utils = {
+    convert: require('./utils/convert'),
+    naclHelper: require('./utils/naclHelper'),
+    number: require('./utils/number'),
+    utils: require('./utils/utils')
 }
 
 connectToMessagingServer()

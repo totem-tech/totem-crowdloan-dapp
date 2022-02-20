@@ -1,19 +1,22 @@
 import React, { useEffect, useState } from 'react'
 import { BehaviorSubject } from "rxjs"
-import { colors, InputAdornment } from '@mui/material'
+import { Button, CircularProgress, colors, InputAdornment } from '@mui/material'
 import FormBuilder from "../../components/form/FormBuilder"
-import { findInput } from '../../components/form/InputCriteriaHint'
+import { findInput, getValues } from '../../components/form/InputCriteriaHint'
 import Message, { STATUS } from '../../components/Message'
 import modalService from '../../components/modal/modalService'
 import { getUser } from '../../utils/chatClient'
 import { translated } from '../../utils/languageHelper'
 import identityHelper from '../../utils/substrate/identityHelper'
-import { arrSort, deferred, objToUrlParams, textEllipsis } from '../../utils/utils'
+import { arrSort, deferred, isError, isFn, objClean, objCopy, objToUrlParams, textEllipsis } from '../../utils/utils'
 import Balance from '../blockchain/Balance'
 import enableExtionsion from '../blockchain/enableExtension'
 import blockchainHelper from '../blockchain/blockchainHelper'
 import getClient from '../messaging'
 import { Settings } from '@mui/icons-material'
+import { crowdloanHelper } from '../blockchain'
+import { hexToBytes } from '../../utils/convert'
+import PromisE from '../../utils/PromisE'
 
 const PLEDGE_PERCENTAGE = 0.1 // 10%
 const [texts, textsCap] = translated({
@@ -22,6 +25,9 @@ const [texts, textsCap] = translated({
     amtPlgLabelDetails: 'you can pledge maximum 10% of your total contribution',
     amtToContLabel: 'amount you would like to contribute now',
     amtToContLabelDetails: 'you can always come back and contribute as many times as you like before the end of the crowdloan',
+    confirm: 'confirm',
+    copiedRefLink: 'your referral link has been copied to clipboard',
+    copyRefLink: 'copy your referral link',
     enterAnAmount: 'enter an amount',
     errAccount1: 'in order to use the Totem Crowdloan DApp, you must create a Totem.Live account first.',
     errAccount2: 'create an account here.',
@@ -30,9 +36,25 @@ const [texts, textsCap] = translated({
     errAmtMax: 'please enter an amount smaller or equal to',
     errAmtMin: 'please enter a number greater than',
     errBackup: 'please download a backup of your Totem account',
+    errPledgeSave: 'failed to store contribution data',
+    errSignature: 'signature pre-validation failed',
+    errTxFailed: 'transaction failed!',
     idLabel: 'select your blockchain identity',
     idPlaceholder: 'select an identity',
-    submit: 'submit',
+    invite1: 'why not invite your friends to Totem?',
+    invite2: 'if your friends contribute you both will earn extra tokens.',
+    missingParaId: 'missing parachain ID',
+    signAndSend: 'sign and send',
+    signatureHeader: 'sign message',
+    signatureMsg: 'you are about to contribute to Totem crowdloan.',
+    signatureMsg2: 'please click continue to approve and generate a signature for this transaction.',
+    submit: 'contribute',
+    transactionCompleted: 'transaction completed successfully!',
+    txSuccessMsg: 'thank you for contributing!',
+    txSuccessMsg2: 'you can come back anytime to contribute more.',
+    transactionMsg: 'Please click contribute to continue and approve your transaction to contribute to the Totem crowdloan on the Polkadot relay chain. Once transaction is completed your funds will be locked for the duration of the crowdloan (2 years). This action is irreversible. Please do not close window until you see a confirmation message.',
+    txInProgress: 'transaction in-progress',
+    txStatus: 'transaction status',
 }, true)
 
 const logos = {
@@ -43,7 +65,7 @@ const logos = {
 export const inputNames = {
     amountContributed: 'amountContributed',
     amountToContribute: 'amountToContribute',
-    amountPledge: 'amountPledge',
+    amountPledged: 'amountPledged',
     identity: 'identity',
 }
 
@@ -54,75 +76,91 @@ export default function CrowdloanForm(props) {
             status: STATUS.loading,
             text: '',
         },
-        loading: true,
+        showLoader: true,
     })
 
     useEffect(() => {
-        // on load check if user has already registered
-        getClient()
-            .then(client => {
-                const { id } = getUser() || {}
-                const redirectTo = window.location.href
-                const appUrl = process.env.REACT_APP_TOTEM_APP_URL
-                const getUrl = (params = {}) => `${appUrl}?${objToUrlParams(params)}`
+        if (!crowdloanHelper.parachainId) {
+            setState({
+                error: {
+                    status: STATUS.error,
+                    text: textsCap.missingParaId,
+                },
+                showLoader: false,
+            })
+            return
+        }
+        const initialize = async () => {
+            await getClient()
+            const { id } = getUser() || {}
+            const redirectTo = window.location.href
+            const appUrl = process.env.REACT_APP_TOTEM_APP_URL
+            const getUrl = (params = {}) => `${appUrl}?${objToUrlParams(params)}`
 
-                const urlCreate = getUrl({ form: 'registration', redirectTo })
-                const urlRestore = getUrl({ form: 'restore', redirectTo })
-                // check if user is registered
-                let error = !id && {
+            const urlCreate = getUrl({ form: 'registration', redirectTo })
+            const urlRestore = getUrl({ form: 'restore', redirectTo })
+            // check if user is registered
+            let error = !id && {
+                status: STATUS.warning,
+                text: (
+                    <div>
+                        {textsCap.errAccount1 + ''}
+                        <a href={urlCreate}>{textsCap.errAccount2}</a>
+
+                        <br />
+                        <br />
+                        {textsCap.errAccount3 + ' '}
+                        <a href={urlRestore}>{textsCap.errAccount4}</a>
+                    </div>
+                )
+            }
+
+            // check if user has created a backup of their account
+            if (!error) {
+                const all = identityHelper.getAll()
+                const allBackedUp = all.every(x =>
+                    !x.uri // consider extension identities as backed up
+                    || !!x.fileBackupTS
+                )
+                const backupUrl = getUrl({
+                    form: 'backup',
+                    confirmed: 'yes', // skips confirmation and starts backup file download immediately
+                    redirectTo,
+                })
+                error = !allBackedUp && {
                     status: STATUS.warning,
                     text: (
                         <div>
-                            {textsCap.errAccount1 + ''}
-                            <a href={urlCreate}>{textsCap.errAccount2}</a>
-
-                            <br />
-                            <br />
-                            {textsCap.errAccount3 + ' '}
-                            <a href={urlRestore}>{textsCap.errAccount4}</a>
+                            <a href={backupUrl}>{textsCap.errBackup}</a>
                         </div>
                     )
                 }
+            }
 
-                // check if user has created a backup of their account
-                if (!error) {
-                    const all = identityHelper.getAll()
-                    const allBackedUp = all.every(x =>
-                        !x.uri // consider extension identities as backed up
-                        || !!x.fileBackupTS
-                    )
-                    const backupUrl = getUrl({
-                        form: 'backup',
-                        confirmed: 'yes', // skips confirmation and starts backup file download immediately
-                        redirectTo,
-                    })
-                    error = !allBackedUp && {
-                        status: STATUS.warning,
-                        text: (
-                            <div>
-                                <a href={backupUrl}>{textsCap.errBackup}</a>
-                            </div>
-                        )
-                    }
-                }
-
-                setState({
-                    error,
-                    loading: false,
-                })
+            setState({
+                error,
+                showLoader: false,
             })
-            .catch(console.error)
+        }
+        // on load connect to messaging service and check if user has already registered
+        PromisE
+            .delay(1000)
+            .then(
+                handleError(
+                    initialize,
+                    () => setState({ showLoader: false }),
+                    'initialize'
+                )
+            )
     }, [])
 
+    if (state.showLoader) return <center><CircularProgress /></center>
     if (state.error) return <Message {...state.error} />
 
     return (
         <FormBuilder {...{
             rxInputs,
-            onSubmit: (_, values) => modalService.confirm({
-                content: JSON.stringify(values, null, 4),
-                maxWidth: 'xs'
-            }, 'confirm-submit'),
+            onSubmit: handleSubmit(rxInputs, s => setState({ ...s })),
             ...props,
             ...state,
         }} />
@@ -132,18 +170,90 @@ CrowdloanForm.defaultProps = {
     submitButton: textsCap.submit
 }
 
+/**
+ * @name    checkExtenstion
+ * @summary Check if extension is enabled and any indentities were injected
+ * 
+ * @prop    {*} rxInputs    RxJS subject containing array of input definitions
+ */
+const checkExtenstion = deferred(rxInputs => {
+    if (!rxInputs.value) return
+    const injected = identityHelper
+        .search({ uri: null }, true)
+    const identityIn = findInput(inputNames.identity, rxInputs)
+    identityIn.message = injected.size > 0
+        ? null
+        : { // extension is either not installed, not enabled or user rejected to allow access
+            status: STATUS.warning,
+            text: (
+                <div>
+                    Could not access PolkadotJS Extension! Please install and enable the browser extension from here:
+                    <br />
+                    <a href="https://polkadot.js.org/extension/">
+                        https://polkadot.js.org/extension/
+                    </a>
+                    <br />
+                    <br />
+                    If you have previosly denied access from this site, please follow steps below:
+                    <ol>
+                        <li>Open the extension</li>
+                        <li>
+                            Click on
+                            <Settings style={{
+                                fontSize: 23,
+                                padding: 0,
+                                margin: '0 0 -7px 0',
+                            }} /> the settings icon
+                        </li>
+                        <li>Click on "Manage Website Access"</li>
+                        <li>Enable access for {window.location.host}</li>
+                    </ol>
+                    Alternatively, you can continue using the DApp with your localy stored Totem identities (<b>not recommended</b>).
+                </div>
+            ),
+        }
+    rxInputs.next(rxInputs.value)
+}, 300)
+
+/**
+ * @name    customError
+ * @name    
+ * 
+ * @param {String|*} title 
+ * @param {String|*} subtitle 
+ * 
+ * @returns {Function}  callback function
+ */
+const customError = (title, subtitle) => error => {
+    const err = isError(error)
+        ? error
+        : new Error(error)
+    err.title = title
+    err.subtitle = subtitle
+    return Promise.reject(err)
+}
+
+/**
+ * @name    getRxInputs
+ * @summary initialize array of inputs to be used with FormBuilder
+ *  
+ * @returns {BehaviorSubject}   rxInputs
+ */
 export const getRxInputs = () => {
     const rxInputs = new BehaviorSubject()
-    const handleAmountTCChange = (values, inputs) => {
+    const handleAmtToContChange = (values, inputs) => {
         const amountContributed = values[inputNames.amountContributed] || 0
         const amountToContribute = values[inputNames.amountToContribute] || 0
         const total = amountContributed + amountToContribute
-        const pledgeIn = findInput(inputNames.amountPledge, inputs)
+        const pledgeIn = findInput(inputNames.amountPledged, inputs)
         const disabled = total <= 0
         pledgeIn.disabled = disabled
         pledgeIn.max = disabled
             ? 0
             : eval((total * PLEDGE_PERCENTAGE).toFixed(2)) || 0
+        pledgeIn.min = pledgeIn.min > pledgeIn.max
+            ? pledgeIn.max
+            : pledgeIn.min
         pledgeIn.marks = !!pledgeIn.max
             && [
                 {
@@ -154,11 +264,11 @@ export const getRxInputs = () => {
                     .fill(0)
                     .map((_, i) => {
                         let value = (pledgeIn.max / 5) * (i + 1)
-                        const decimals = value > 100 ? 0 : 2
-                        value = eval(value.toFixed(2))
+                        // const decimals = value > 100 ? 0 : 2
+                        value = value.toFixed(2)
                         return {
                             label: value,
-                            value,
+                            value: Number(value),
                         }
                     }),
                 {
@@ -176,9 +286,38 @@ export const getRxInputs = () => {
     }
     const handleIdentityChange = (values, inputs) => {
         const identity = values[inputNames.identity]
-        if (!identity) return
+        const contributedIn = findInput(inputNames.amountContributed, inputs)
+        const toContributeIn = findInput(inputNames.amountToContribute, inputs)
+        const pledgeIn = findInput(inputNames.amountPledged, rxInputs.value)
+        contributedIn.value = 0
+        contributedIn.hidden = true
 
-        // retrieve existing pledge amounts
+        if (!!identity) {
+            crowdloanHelper.getContributions(identity)
+                .then(async (amountContributed) => {
+                    contributedIn.value = amountContributed
+                    contributedIn.hidden = amountContributed <= 0
+
+                    // fetch existing amount pledged (if any)
+                    const client = await getClient()
+                    const { amountPledged = 0 } = (await client.crowdloan(identity)) || {}
+                    pledgeIn.value = amountPledged
+                    toContributeIn.onChange(
+                        getValues(rxInputs.value),
+                        rxInputs.value,
+                    )
+                    rxInputs.next([...rxInputs.value])
+                })
+        }
+        return true
+    }
+    const tokenInputProps = {
+        // Visibility toggle icon/button
+        endAdornment: (
+            <InputAdornment position='end'>
+                <b>{blockchainHelper?.unit?.name || 'DOT'}</b>
+            </InputAdornment>
+        ),
     }
     const inputs = [
         {
@@ -186,6 +325,7 @@ export const getRxInputs = () => {
             label: textsCap.idLabel,
             labelDetails: '',
             name: inputNames.identity,
+            onChange: handleIdentityChange,
             options: [],
             placeholder: textsCap.idPlaceholder,
             rxOptions: identityHelper.rxIdentities,
@@ -194,31 +334,27 @@ export const getRxInputs = () => {
             type: 'select',
         },
         {
+            disabled: true,
             hidden: true,
+            InputProps: tokenInputProps,
             label: textsCap.amtContdLabel,
             name: inputNames.amountContributed,
             placeholder: textsCap.enterAnAmount,
             type: 'number',
+            value: 0,
         },
         {
             customMessages: {
                 max: textsCap.errAmtMax,
                 min: textsCap.errAmtMin,
             },
-            InputProps: {
-                // Visibility toggle icon/button
-                endAdornment: (
-                    <InputAdornment position='end'>
-                        <b>{blockchainHelper?.unit?.name || 'DOT'}</b>
-                    </InputAdornment>
-                ),
-            },
+            InputProps: tokenInputProps,
             label: textsCap.amtToContLabel,
             labelDetails: textsCap.amtToContLabelDetails,
             max: 1000000,
             min: 5,
             name: inputNames.amountToContribute,
-            onChange: handleAmountTCChange,
+            onChange: handleAmtToContChange,
             placeholder: textsCap.enterAnAmount,
             required: true,
             type: 'number',
@@ -229,8 +365,9 @@ export const getRxInputs = () => {
             label: textsCap.amtPlgLabel,
             labelDetails: textsCap.amtPlgLabelDetails,
             min: 0,
-            name: inputNames.amountPledge,
+            name: inputNames.amountPledged,
             type: 'slider',
+            value: 0,
         },
     ]
 
@@ -240,8 +377,196 @@ export const getRxInputs = () => {
     return rxInputs
 }
 
-const handleSumbit = rxInputs => () => {
-    // check identity  balance and warn user about existential (if needed)
+/**
+ * @name    handleCopyReferralUrl
+ * 
+ * @param   {*} e event
+ */
+const handleCopyReferralUrl = e => {
+    e.preventDefault()
+
+    const { id } = getUser()
+    const url = `${window.location.href}?ref=${id}`
+    window.navigator.clipboard.writeText(url)
+    modalService.confirm({
+        confirmButton: null,
+        content: textsCap.copiedRefLink,
+    })
+}
+
+/**
+ * @name    handleError
+ * @summary Catches all errors while executing the given function and shows a modal to display the error message.
+ * To display modal title and subtitle use the `customError()` function.
+ * 
+ * @param   {Function}          func        function to be executed   
+ * @param   {Function}          onFinally   (optional)  callback to be executed after execution of `func`
+ * @param   {Function|String}   modalId     (optional)  modal ID or setState function
+ * 
+ * @returns {Function}  callback
+ */
+const handleError = (func, onFinally, modalId) => {
+    let state = {}
+    return async (...args) => {
+        try {
+            await func(...args)
+        } catch (err) {
+            const content = err?.message || `${err}`
+            const setState = isFn(modalId) && modalId
+            if (setState) {
+                state.message = {
+                    header: err?.title,
+                    icon: true,
+                    status: STATUS.error,
+                    text: content,
+                }
+                setState({ ...state })
+            } else {
+                modalService.confirm({
+                    confirmButton: null,
+                    content,
+                    subtitle: err?.subtitle,
+                    title: err?.title,
+                }, modalId)
+            }
+        } finally {
+            isFn(onFinally) && onFinally(state)
+        }
+    }
+}
+
+const handleSubmit = (rxInputs, setState) => async (_, values) => {
+    const client = await getClient()
+    const identity = values[inputNames.identity]
+    const identityObj = identityHelper.get(identity)
+    if (!identityObj) return
+
+    const amountContributed = values[inputNames.amountContributed]
+    const amountToContribute = values[inputNames.amountToContribute]
+    const sigantureProps = [
+        'amountContributed',
+        'amountPledged',
+        'amountToContribute',
+        'identity',
+        'totalContribution',
+        'userId'
+    ]
+    const contribution = objClean(
+        {
+            ...values,
+            totalContribution: amountContributed + amountToContribute,
+            userId: getUser()?.id,
+        },
+        sigantureProps,
+    )
+
+    const modalId = 'submit'
+    const state = { submitDisabled: true }
+    let unsubscribe
+    setState(state)
+    const handleConfirm = async (accepted) => {
+        if (!accepted) return
+
+        const signature = await identityHelper
+            .signature(identity, contribution)
+        // pre-validate
+        const valid = await identityHelper
+            .signatureVerify(
+                contribution,
+                signature,
+                identity
+            )
+        if (!valid) throw new Error(textsCap.errSignature)
+
+        // store pledge data with signature to the messaging server
+        await client
+            .crowdloan({ ...contribution, signature })
+            .catch(customError(textsCap.errPledgeSave))
+
+        // get transaction signer from PolkadotJS extension if identity was injected
+        const signer = !identityObj.uri && await identityHelper
+            .extension
+            .getSigner(identity)
+
+        const rxUpdater = new BehaviorSubject({ status: { type: 'Initiating' } })
+        unsubscribe = rxUpdater.subscribe(result => {
+            state.message = {
+                header: textsCap.txInProgress,
+                icon: true,
+                status: STATUS.loading,
+                text: `${textsCap.txStatus}: ${result?.status?.type || ''}`
+            }
+            setState(state)
+        })
+
+        state.loading = true
+        setState(state)
+        // execute the contribution transaction
+        const [blockHash] = await blockchainHelper
+            .signAndSend(
+                identity,
+                'api.tx.crowdloan.contribute',
+                [
+                    crowdloanHelper.parachainId,
+                    amountToContribute * blockchainHelper.unit.amount,
+                    undefined, // required
+                ],
+                rxUpdater,
+                signer
+            )
+            .catch(customError(textsCap.errTxFailed))
+
+        const identityIn = findInput(inputNames.identity, rxInputs.value)
+        await identityIn.onChange(values, rxInputs.value, {})
+        rxInputs.next([...rxInputs.value])
+        // transaction was successful
+        setTimeout(() => setState({
+            message: {
+                header: textsCap.transactionCompleted,
+                icon: true,
+                status: STATUS.success,
+                text: (
+                    <div>
+                        {textsCap.txSuccessMsg} {textsCap.txSuccessMsg2}
+                        <br />
+                        <br />
+                        {textsCap.invite1} {textsCap.invite2}
+                        <br />
+                        <Button
+                            color='success'
+                            onClick={handleCopyReferralUrl}
+                            variant='outlined'
+                        >
+                            {textsCap.copyRefLink}
+                        </Button>
+                    </div>
+                )
+            }
+        }), 500)
+    }
+
+    modalService.confirm({
+        confirmButton: textsCap.signAndSend,
+        content: (
+            <>
+                {textsCap.signatureMsg}
+                <br />
+                {textsCap.signatureMsg2}
+            </>
+        ),
+        maxWidth: 'xs',
+        onConfirm: handleError(
+            handleConfirm,
+            (state) => {
+                isFn(unsubscribe) && unsubscribe()
+                unsubscribe = null
+                state.submitDisabled = false
+                setState(state)
+            },
+            setState,
+        ),
+        title: textsCap.signatureHeader,
+    }, modalId)
 }
 
 // Identity options modifier
@@ -299,48 +624,3 @@ const identityOptionsModifier = rxInputs => identities => {
     checkExtenstion(rxInputs)
     return options
 }
-
-/**
- * @name    checkExtenstion
- * @summary Check if extension is enabled and any indentities were injected
- * 
- * @prop    {*} rxInputs    RxJS subject containing array of input definitions
- */
-const checkExtenstion = deferred(rxInputs => {
-    if (!rxInputs.value) return
-    const injected = identityHelper
-        .search({ uri: null }, true)
-    const identityIn = findInput(inputNames.identity, rxInputs)
-    identityIn.message = injected.size > 0
-        ? null
-        : { // extension is either not installed, not enabled or user rejected to allow access
-            status: STATUS.warning,
-            text: (
-                <div>
-                    Could not access PolkadotJS Extension! Please install and enable the browser extension from here:
-                    <br />
-                    <a href="https://polkadot.js.org/extension/">
-                        https://polkadot.js.org/extension/
-                    </a>
-                    <br />
-                    <br />
-                    If you have previosly denied access from this site, please follow steps below:
-                    <ol>
-                        <li>Open the extension</li>
-                        <li>
-                            Click on
-                            <Settings style={{
-                                fontSize: 23,
-                                padding: 0,
-                                margin: '0 0 -7px 0',
-                            }} /> the settings icon
-                        </li>
-                        <li>Click on "Manage Website Access"</li>
-                        <li>Enable access for {window.location.host}</li>
-                    </ol>
-                    Alternatively, you can continue using the DApp with your localy stored Totem identities (<b>not recommended</b>).
-                </div>
-            ),
-        }
-    rxInputs.next(rxInputs.value)
-}, 300)

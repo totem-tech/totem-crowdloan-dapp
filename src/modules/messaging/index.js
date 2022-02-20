@@ -1,4 +1,4 @@
-import { getClient, rxIsConnected } from '../../utils/chatClient'
+import { ChatClient, getClient, rxIsConnected } from '../../utils/chatClient'
 import { setSelected } from '../../utils/languageHelper'
 import { subjectAsPromise } from '../../utils/reactHelper'
 // import storage from '../../utils/storageHelper'
@@ -6,6 +6,11 @@ import { subjectAsPromise } from '../../utils/reactHelper'
 
 const SERVER_URL = process.env.REACT_APP_MESSAGING_SERVER_URL
 let client
+/**
+ * 
+ * 
+ * @returns {ChatClient}
+ */
 export default async function _getClient() {
     if (!SERVER_URL) throw new Error('Missing messaging server websocket URL')
 

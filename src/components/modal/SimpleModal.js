@@ -97,9 +97,10 @@ export default function SimpleModal(props) {
                     {actionsBtns
                         .filter(Boolean)
                         .map((props, i) => {
-                            const { Component = Button } = props
-                            delete props.Component
-                            return <Component {...{ ...props, key: i }} />
+                            const btnProps = { ...props }
+                            const { Component = Button } = btnProps
+                            delete btnProps.Component
+                            return <Component {...{ ...btnProps, key: i }} />
                         })}
                 </DialogActions>
             )}

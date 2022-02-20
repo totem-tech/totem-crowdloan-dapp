@@ -127,7 +127,6 @@ export default function FormBuilder(props) {
                         onChange: handleInputChange(input.name),
                     }} />
                 ))}
-            {message && <Message {...message} />}
             {submitButton && (
                 <div style={{
                     cursor: loading ? 'progress' : '',
@@ -144,6 +143,8 @@ export default function FormBuilder(props) {
                     }} />
                 </div>
             )}
+
+            {message && <Message {...message} />}
         </div>
     )
 }

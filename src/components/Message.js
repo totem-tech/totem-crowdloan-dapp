@@ -1,7 +1,9 @@
 import React from 'react'
-import { Box, colors, Typography } from '@mui/material';
+import { Box, CircularProgress, colors, Typography } from '@mui/material';
 import { isStr } from '../utils/utils';
+import { CheckCircle, Error, HeartBroken, Info } from '@mui/icons-material';
 
+const { green, grey, red, orange, yellow } = colors
 export const STATUS = {
     error: 'error',
     info: 'info',
@@ -9,7 +11,6 @@ export const STATUS = {
     success: 'success',
     warning: 'warning',
 }
-const { green, grey, red, orange, yellow } = colors
 export const STATUS_COLOR = {
     error: red,
     info: grey,
@@ -17,15 +18,32 @@ export const STATUS_COLOR = {
     success: green,
     warning: orange,
 }
-export default function Message({ status, style, text }) {
+export const iconSize = 48
+export const iconStyle = {
+    fontSize: iconSize,
+    verticalAlign: 'middle',
+}
+export const STATUS_ICON = {
+    error: <HeartBroken color='error' style={iconStyle} />,
+    info: <Info color='info' style={iconStyle} />,
+    loading: <CircularProgress color='warning' size={iconSize - 10} style={{ marginTop: 5 }} />,
+    success: <CheckCircle color='success' style={iconStyle} />,
+    warning: <Error color='warning' style={iconStyle} />,
+}
+export default function Message({ content, header, icon, status, style, text }) {
+    status = STATUS[status] || STATUS.info
     const color = STATUS_COLOR[status] || STATUS_COLOR.info
+    text = text || content
     text = isStr(text)
         ? text.replace('Error: ', '') // remove "Error: " from error messages
         : text
-    return !text
+    icon = icon !== true
+        ? icon
+        : STATUS_ICON[status]
+    return !text && !header
         ? ''
         : (
-            <Box style={{
+            <Box className='imessage' style={{
                 background: color[100],
                 borderRadius: 4,
                 margin: '10px 0',
@@ -35,13 +53,33 @@ export default function Message({ status, style, text }) {
                 whiteSpace: 'auto',
                 ...style,
             }}>
+                {!!icon && (
+                    <div style={{
+                        display: 'inline-block',
+                        paddingLeft: 5,
+                        verticalAlign: 'top',
+                    }}>
+                        {icon}
+                    </div>
+                )}
                 <Typography {...{
                     component: 'div',
                     style: {
                         color: color[900],
-                        padding: '7px 15px',
+                        display: 'inline-block',
+                        padding: !!header
+                            ? '3px 15px 7px'
+                            : '7px 15px',
+                        maxWidth: !!icon && 'calc( 100% - 83px )' || '',
                     }
                 }}>
+                    {header && (
+                        <div>
+                            <b>
+                                {header}
+                            </b>
+                        </div>
+                    )}
                     {text}
                 </Typography>
             </Box>
