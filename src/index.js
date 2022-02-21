@@ -3,20 +3,27 @@ import ReactDOM from 'react-dom'
 import connectToMessagingServer from './modules/messaging'
 import blockchainHelper from './modules/blockchain'
 import App from './App'
-import { Typography } from '@mui/material'
+// import { Typography } from '@mui/material'
 import { crowdloanHelper } from './modules/blockchain'
+import Holding from './components/holding'
 
 console.log(`${process.env.REACT_APP_ENV} in ${process.env.NODE_ENV} mode`)
 
+const useStyles = makeStyles((theme) => ({
+    root: {
+        minHeight: '100vh',
+        backgroundImage: `url(${process.env.PUBLIC_URL + '/images/landing-background.svg'})`,
+        backgroundRepeat: 'no-repeat',
+        backgroundSize: 'cover',
+    },
+})
+)
+
 const ComingSoon = () => (
-    <Typography style={{ textAlign: 'center' }}>
-        <br />
-        <h1>Totem Crowdloan is coming soon.</h1>
-        <h3>Stay tuned by <a href="https://totem.live/?form=newslettersignup">signing up here</a>.</h3>
-        <p>Check out our <a href="https://totem.live">testnet app</a>.</p>
-        <p>Join us on <a href="https://discord.gg/Vx7qbgn">Discord</a> and <a href="https://t.me/totemchat">Telegram</a></p>
-        <p>For more information visit <a href="https://totemaccounting.com">our website.</a></p>
-    </Typography>
+    <div className={classes.root}>
+        <CssBaseline />
+        <Holding />
+    </div>
 )
 ReactDOM.render(
     process.env.REACT_APP_COMING_SOON === 'true'
