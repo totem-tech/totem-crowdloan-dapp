@@ -720,16 +720,16 @@ const identityOptionsModifier = rxInputs => identities => {
                 ? { // Polkadot logo
                     src: logos.polkadot,
                     style: {
-                        margin: '-5px -5px -5px 0',
-                        maxWidth: 20,
-                        paddingRight: 10,
+                        margin: '-12px 0 -12px -6px',
+                        maxWidth: 36,
+                        paddingRight: 5,
                     },
                 }
                 : { // Totem logo
                     src: logos.totem,
                     style: {
-                        margin: '-7px -7px -7px -3px',
-                        maxWidth: 27,
+                        margin: '-7px -1px -7px -3px',
+                        maxWidth: 34,
                         paddingRight: 8,
                     },
                 }
