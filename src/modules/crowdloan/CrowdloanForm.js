@@ -291,7 +291,7 @@ export const getRxInputs = () => {
             : pledgeIn.value
         return true
     }
-    const handleIdentityChange = async (values, inputs) => {
+    const handleIdentityChange = (values, inputs) => {
         const identity = values[inputNames.identity]
         const contributedIn = findInput(inputNames.amountContributed, inputs)
         const toContributeIn = findInput(inputNames.amountToContribute, inputs)
@@ -307,37 +307,41 @@ export const getRxInputs = () => {
             status: STATUS.loading,
             text: textsCap.fetchingContributions,
         }
-        rxInputs.next([...rxInputs.value])
 
-        let amountContributed = await crowdloanHelper
+        crowdloanHelper
             .getUserContributions(identity)
-            .catch(err => err)
-        console.log({ amountContributed })
-        if (isError(amountContributed)) {
-            identityIn.message = {
-                header: textsCap.errFetchContribution,
-                icon: true,
-                status: STATUS.error,
-                text: `${amountContributed}`
+            .then(async (amountContributed) => {
+                contributedIn.value = amountContributed
+                contributedIn.hidden = amountContributed <= 0
 
-            }
-            return true
-        }
+                // fetch existing amount pledged (if any)
+                console.log('getUserContributions: connecting to messaging server')
+                const client = await getClient()
+                console.log('getUserContributions: connected to messaging server', { client })
+                const { amountPledged = 0 } = amountContributed > 0
+                    && await client
+                        .crowdloan(identity)
+                        .catch(() => ({}))
+                    || {}
+                console.log('getUserContributions', { amountPledged })
+                pledgeIn.value = amountPledged
+                toContributeIn.onChange(
+                    getValues(rxInputs.value),
+                    rxInputs.value,
+                )
+                identityIn.message = null
+                rxInputs.next([...rxInputs.value])
+            })
+            .catch(err => {
+                identityIn.message = {
+                    header: textsCap.errFetchContribution,
+                    icon: true,
+                    status: STATUS.error,
+                    text: `${err}`
 
-        contributedIn.value = amountContributed
-        contributedIn.hidden = amountContributed <= 0
-
-        // fetch existing amount pledged (if any)
-        const client = await getClient()
-        const { amountPledged = 0 } = (await client.crowdloan(identity)) || {}
-        pledgeIn.value = amountPledged
-        toContributeIn.onChange(
-            getValues(rxInputs.value),
-            rxInputs.value,
-        )
-        identityIn.message = null
-        // rxInputs.next([...rxInputs.value])
-        await PromisE.delay(100)
+                }
+                rxInputs.next([...rxInputs.value])
+            })
         return true
     }
     const tokenInputProps = {
