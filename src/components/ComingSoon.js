@@ -15,7 +15,7 @@ const useStyles = makeStyles((theme) => ({
         color: '#fff',
         display: 'flex',
         fontFamily: 'Heebo, sans-serif',
-        height: 'calc( 100% - 116px )',
+        height: 'calc( 100% - 144px )',
         justifyContent: 'center',
         paddingTop: 'calc( 100vh * .15 )',
         textAlign: 'center',
