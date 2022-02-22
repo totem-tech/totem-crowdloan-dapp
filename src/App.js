@@ -6,7 +6,7 @@ import modalService from './components/modal/modalService'
 export default () => {
     return (
         <div style={{
-            maxWidth: 400,
+            maxWidth: 450,
             margin: '50px auto',
             padding: 15
         }}>

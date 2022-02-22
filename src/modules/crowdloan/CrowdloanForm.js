@@ -16,6 +16,7 @@ import getClient from '../messaging'
 import { Settings } from '@mui/icons-material'
 import { crowdloanHelper } from '../blockchain'
 import PromisE from '../../utils/PromisE'
+import { makeStyles } from '@mui/styles'
 
 const PLEDGE_PERCENTAGE = 0.1 // 10%
 const [texts, textsCap] = translated({
@@ -66,6 +67,21 @@ const logos = {
     polkadot: 'images/polkadot-logo-circle.svg',
     totem: 'images/logos/colour-t-logo.svg',
 }
+const useStyles = makeStyles(() => ({
+    link: {
+        color: 'orange',
+        '&:active': {
+            color: 'orange',
+            fontWeight: 'bold',
+        },
+    },
+    root: {
+        background: 'white',
+        borderRadius: 5,
+        boxShadow: '10px 10px #f0f0f04f',
+        padding: 25,
+    },
+}))
 
 export const inputNames = {
     amountContributed: 'amountContributed',
@@ -76,7 +92,8 @@ export const inputNames = {
 }
 
 export default function CrowdloanForm(props) {
-    const rxInputs = useState(getRxInputs)[0]
+    const classes = useStyles()
+    const rxInputs = useState(() => getRxInputs(classes))[0]
     const [state, setState] = useState({
         error: {
             status: STATUS.loading,
@@ -175,6 +192,9 @@ export default function CrowdloanForm(props) {
             onSubmit: handleSubmit(rxInputs, s => setState({ ...s })),
             ...props,
             ...state,
+            formProps: {
+                className: classes.root,
+            },
         }} />
     )
 }
@@ -251,15 +271,15 @@ const customError = (title, subtitle) => error => {
  *  
  * @returns {BehaviorSubject}   rxInputs
  */
-export const getRxInputs = () => {
+export const getRxInputs = (classes) => {
     const rxInputs = new BehaviorSubject()
-    //https://docs.totemaccounting.com/#/crowdloan/crowdloan-details?id=base-calculation
     const calculateRewards = (amtContribution = 0, amtPledge = 0, validReferred, softCapReached, targetCapReached) => {
         let reward = amtContribution * .1
-        const totalCommitment = amtContribution + amtPledge
-        const ratio = amtPledge / amtContribution
-        const multiplier = totalCommitment * (1 + ratio) * .1
-        console.log({ reward, multiplier })
+        if (amtPledge > 0) {
+            const totalCommitment = amtContribution + amtPledge
+            const ratio = amtPledge / amtContribution
+            reward = totalCommitment * (1 + ratio) * .1
+        }
         return Number(reward.toFixed(2))
     }
     const handleAmtToContChange = (values, inputs) => {
@@ -285,8 +305,8 @@ export const getRxInputs = () => {
                     .fill(0)
                     .map((_, i) => {
                         let value = (pledgeIn.max / 5) * (i + 1)
-                        // const decimals = value > 100 ? 0 : 2
-                        value = value.toFixed(2)
+                        const decimals = value > 100 ? 0 : 2
+                        value = value.toFixed(decimals)
                         return {
                             label: value,
                             value: Number(value),
@@ -294,7 +314,7 @@ export const getRxInputs = () => {
                     }),
                 {
                     label: pledgeIn.max,
-                    value: pledgeIn.max,
+                    value: pledgeIn.max.toFixed(pledgeIn.max > 100 ? 0 : 2),
                 },
             ]
         pledgeIn.step = (pledgeIn.max || 0) < 10
@@ -357,6 +377,24 @@ export const getRxInputs = () => {
             })
         return true
     }
+    const handlePledgeChange = (values, inputs) => {
+        const rewardsIn = findInput(inputNames.amountRewards, inputs)
+        const contributed = values[inputNames.amountContributed] || 0
+        const toContribute = values[inputNames.amountToContribute] || 0
+        const pledge = values[inputNames.amountPledged]
+        const totalContribution = contributed + toContribute
+        rewardsIn.hidden = !(totalContribution >= 5)
+        rewardsIn.value = rewardsIn.hidden
+            ? 0
+            : calculateRewards(
+                totalContribution,
+                pledge,
+                false,
+                false,
+                false,
+            )
+        return true
+    }
     const tokenInputProps = (ticker = blockchainHelper?.unit?.name || 'DOT') => ({
         // Visibility toggle icon/button
         endAdornment: (
@@ -413,6 +451,7 @@ export const getRxInputs = () => {
                 <div>
                     {textsCap.amtPlgLabelDetails + ' '}
                     <a
+                        className={classes.link}
                         href='https://docs.totemaccounting.com/#/crowdloan/participation?id=what-is-a-pledge' target='_blank'
                     >
                         {textsCap.amtPlgLabelDetails2}
@@ -421,41 +460,26 @@ export const getRxInputs = () => {
             ),
             min: 0,
             name: inputNames.amountPledged,
-            onChange: (values, inputs) => {
-                const rewardsIn = findInput(inputNames.amountRewards, inputs)
-                const contributed = values[inputNames.amountContributed] || 0
-                const toContribute = values[inputNames.amountToContribute] || 0
-                const pledge = values[inputNames.amountPledged]
-                const totalContribution = contributed + toContribute
-                rewardsIn.hidden = !(totalContribution >= 5)
-                rewardsIn.value = rewardsIn.hidden
-                    ? 0
-                    : calculateRewards(
-                        totalContribution,
-                        pledge,
-                        false,
-                        false,
-                        false,
-                    )
-                return true
-            },
+            onChange: handlePledgeChange,
             type: 'slider',
             value: 0,
+            valueLabelFormat: value => Number(value.toFixed(2))
         },
         {
+            disabled: true,
             hidden: true, // visible only when total contribution amount is greater than 5
             InputProps: tokenInputProps('Kapex'),
             label: textsCap.amtRewardsLabel,
             labelDetails: (
                 <a
-                    href='https://docs.totemaccounting.com/#/crowdloan/crowdloan-proposition?id=payouts'
+                    className={classes.link}
+                    href='https://docs.totemaccounting.com/#/crowdloan/crowdloan-details?id=base-calculation'
                     target='_blank'
                 >
                     {textsCap.amtRewardsLabelDetails}
                 </a>
             ),
             name: inputNames.amountRewards,
-            readOnly: true,
             type: 'number',
         },
         // Referral bonus doc: https://docs.totemaccounting.com/#/crowdloan/crowdloan-proposition?id=crowdloan-referral-bonus

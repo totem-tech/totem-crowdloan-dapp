@@ -7,16 +7,22 @@ import blockchainHelper from './modules/blockchain'
 import { crowdloanHelper } from './modules/blockchain'
 import identityHelper from './utils/substrate/identityHelper'
 import App from './App'
+import AppContainer from './components/AppContainer'
 
 const showComingSoon = process.env.REACT_APP_COMING_SOON === 'true'
 const appEnv = process.env.REACT_APP_ENV
 const nodeEnv = process.env.NODE_ENV
 console.log(`${appEnv} in ${nodeEnv} mode`)
 
+
 ReactDOM.render(
-    showComingSoon
-        ? <ComingSoon />
-        : <App />,
+    (
+        <AppContainer>
+            {showComingSoon
+                ? <ComingSoon />
+                : <App />}
+        </AppContainer>
+    ),
     document.getElementById('root'),
 )
 
