@@ -15,7 +15,6 @@ import blockchainHelper from '../blockchain/blockchainHelper'
 import getClient from '../messaging'
 import { Settings } from '@mui/icons-material'
 import { crowdloanHelper } from '../blockchain'
-import { hexToBytes } from '../../utils/convert'
 import PromisE from '../../utils/PromisE'
 
 const PLEDGE_PERCENTAGE = 0.1 // 10%
@@ -29,13 +28,13 @@ const [texts, textsCap] = translated({
     copiedRefLink: 'your referral link has been copied to clipboard',
     copyRefLink: 'copy your referral link',
     enterAnAmount: 'enter an amount',
-    errAccount1: 'in order to use and contribute to the Totem Kapex Crowdloan, you must create a Totem account first.',
+    errAccount1: 'in order to contribute to the Totem Crowdloan, you must create a Totem account.',
     errAccount2: 'create an account here.',
     errAccount3: 'alternatively, if you already have an existing Totem account backup file, you can restore it.',
     errAccount4: 'restore account',
     errAmtMax: 'please enter an amount smaller or equal to',
     errAmtMin: 'please enter a number greater than',
-    errBackup: 'please download a backup of your Totem account',
+    errBackup: 'to safeguard your account please click here to download a backup of your Totem account',
     errPledgeSave: 'failed to store contribution data',
     errSignature: 'signature pre-validation failed',
     errTxFailed: 'transaction failed!',
@@ -104,7 +103,7 @@ export default function CrowdloanForm(props) {
                 status: STATUS.warning,
                 text: (
                     <div>
-                        {textsCap.errAccount1 + ''}
+                        {textsCap.errAccount1 + ' '}
                         <a href={urlCreate}>{textsCap.errAccount2}</a>
 
                         <br />
@@ -137,10 +136,11 @@ export default function CrowdloanForm(props) {
                 }
             }
 
-            setState({
+
+            return {
                 error,
                 showLoader: false,
-            })
+            }
         }
         // on load connect to messaging service and check if user has already registered
         PromisE
@@ -148,7 +148,12 @@ export default function CrowdloanForm(props) {
             .then(
                 handleError(
                     initialize,
-                    () => setState({ showLoader: false }),
+                    (state, result) => {
+                        state = { ...result, ...state }
+                        setState(state)
+
+                        !state.error && handleError(enableExtionsion(), null, setState)
+                    },
                     'initialize'
                 )
             )
@@ -293,7 +298,7 @@ export const getRxInputs = () => {
         contributedIn.hidden = true
 
         if (!!identity) {
-            crowdloanHelper.getContributions(identity)
+            crowdloanHelper.getUserContributions(identity)
                 .then(async (amountContributed) => {
                     contributedIn.value = amountContributed
                     contributedIn.hidden = amountContributed <= 0
@@ -371,8 +376,6 @@ export const getRxInputs = () => {
         },
     ]
 
-    enableExtionsion()
-        .catch(console.error)
     rxInputs.next(inputs)
     return rxInputs
 }
@@ -407,9 +410,10 @@ const handleCopyReferralUrl = e => {
  */
 const handleError = (func, onFinally, modalId) => {
     let state = {}
+    let result
     return async (...args) => {
         try {
-            await func(...args)
+            result = await func(...args)
         } catch (err) {
             const content = err?.message || `${err}`
             const setState = isFn(modalId) && modalId
@@ -430,7 +434,7 @@ const handleError = (func, onFinally, modalId) => {
                 }, modalId)
             }
         } finally {
-            isFn(onFinally) && onFinally(state)
+            isFn(onFinally) && onFinally(state, result)
         }
     }
 }
