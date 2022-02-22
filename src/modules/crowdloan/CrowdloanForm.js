@@ -294,14 +294,21 @@ export const getRxInputs = () => {
         const identity = values[inputNames.identity]
         const contributedIn = findInput(inputNames.amountContributed, inputs)
         const toContributeIn = findInput(inputNames.amountToContribute, inputs)
+        const identityIn = findInput(inputNames.identity, rxInputs.value)
         const pledgeIn = findInput(inputNames.amountPledged, rxInputs.value)
         contributedIn.value = 0
         contributedIn.hidden = true
 
         if (!!identity) {
+            identityIn.message = {
+                icon: true,
+                status: STATUS.loading,
+                text: 'Checking existing contributions',
+            }
             handleError(
                 async () => {
-                    let amountContributed = crowdloanHelper
+                    identityIn.message = null
+                    let amountContributed = await crowdloanHelper
                         .getUserContributions(identity)
                         .catch(customError(textsCap.errFetchContribution))
 
