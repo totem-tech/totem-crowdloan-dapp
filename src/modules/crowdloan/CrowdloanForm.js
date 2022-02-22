@@ -312,6 +312,7 @@ export const getRxInputs = () => {
         let amountContributed = await crowdloanHelper
             .getUserContributions(identity)
             .catch(err => err)
+        console.log({ amountContributed })
         if (isError(amountContributed)) {
             identityIn.message = {
                 header: textsCap.errFetchContribution,
@@ -336,6 +337,7 @@ export const getRxInputs = () => {
         )
         identityIn.message = null
         // rxInputs.next([...rxInputs.value])
+        await PromisE.delay(100)
         return true
     }
     const tokenInputProps = {
