@@ -21,7 +21,10 @@ const PLEDGE_PERCENTAGE = 0.1 // 10%
 const [texts, textsCap] = translated({
     amtContdLabel: 'amount you already contributed',
     amtPlgLabel: 'amount you would like to pledge',
-    amtPlgLabelDetails: 'you can pledge maximum 10% of your total crowdloan contribution',
+    amtPlgLabelDetails: 'You can pledge maximum 10% of your total crowdloan contribution.',
+    amtPlgLabelDetails2: 'learn more',
+    amtRewardsLabel: 'estimated rewards',
+    amtRewardsLabelDetails: 'learn more about rewards distribution',
     amtToContLabel: 'amount you would like to contribute now',
     amtToContLabelDetails: 'you can always come back and contribute as many times as you like before the end of the crowdloan',
     close: 'close',
@@ -66,8 +69,9 @@ const logos = {
 
 export const inputNames = {
     amountContributed: 'amountContributed',
-    amountToContribute: 'amountToContribute',
     amountPledged: 'amountPledged',
+    amountRewards: 'amountRewards',
+    amountToContribute: 'amountToContribute',
     identity: 'identity',
 }
 
@@ -249,16 +253,25 @@ const customError = (title, subtitle) => error => {
  */
 export const getRxInputs = () => {
     const rxInputs = new BehaviorSubject()
+    //https://docs.totemaccounting.com/#/crowdloan/crowdloan-details?id=base-calculation
+    const calculateRewards = (amtContribution = 0, amtPledge = 0, validReferred, softCapReached, targetCapReached) => {
+        let reward = amtContribution * .1
+        const totalCommitment = amtContribution + amtPledge
+        const ratio = amtPledge / amtContribution
+        const multiplier = totalCommitment * (1 + ratio) * .1
+        console.log({ reward, multiplier })
+        return Number(reward.toFixed(2))
+    }
     const handleAmtToContChange = (values, inputs) => {
         const amountContributed = values[inputNames.amountContributed] || 0
         const amountToContribute = values[inputNames.amountToContribute] || 0
-        const total = amountContributed + amountToContribute
+        const totalContribution = amountContributed + amountToContribute
         const pledgeIn = findInput(inputNames.amountPledged, inputs)
-        const disabled = total <= 0
+        const disabled = totalContribution <= 0
         pledgeIn.disabled = disabled
         pledgeIn.max = disabled
             ? 0
-            : eval((total * PLEDGE_PERCENTAGE).toFixed(2)) || 0
+            : eval((totalContribution * PLEDGE_PERCENTAGE).toFixed(2)) || 0
         pledgeIn.min = pledgeIn.min > pledgeIn.max
             ? pledgeIn.max
             : pledgeIn.min
@@ -290,6 +303,8 @@ export const getRxInputs = () => {
         pledgeIn.value = pledgeIn.value > pledgeIn.max
             ? pledgeIn.max
             : pledgeIn.value
+
+        pledgeIn.onChange(getValues(inputs), inputs)
         return true
     }
     const handleIdentityChange = (values, inputs) => {
@@ -342,14 +357,14 @@ export const getRxInputs = () => {
             })
         return true
     }
-    const tokenInputProps = {
+    const tokenInputProps = (ticker = blockchainHelper?.unit?.name || 'DOT') => ({
         // Visibility toggle icon/button
         endAdornment: (
             <InputAdornment position='end'>
-                <b>{blockchainHelper?.unit?.name || 'DOT'}</b>
+                <b>{ticker}</b>
             </InputAdornment>
         ),
-    }
+    })
     const inputs = [
         {
             inlineLabel: true,
@@ -367,7 +382,7 @@ export const getRxInputs = () => {
         {
             disabled: true,
             hidden: true,
-            InputProps: tokenInputProps,
+            InputProps: tokenInputProps(),
             label: textsCap.amtContdLabel,
             name: inputNames.amountContributed,
             placeholder: textsCap.enterAnAmount,
@@ -379,7 +394,7 @@ export const getRxInputs = () => {
                 max: textsCap.errAmtMax,
                 min: textsCap.errAmtMin,
             },
-            InputProps: tokenInputProps,
+            InputProps: tokenInputProps(),
             label: textsCap.amtToContLabel,
             labelDetails: textsCap.amtToContLabelDetails,
             max: 1000000,
@@ -394,12 +409,56 @@ export const getRxInputs = () => {
             disabled: true,
             valueLabelDisplay: 'auto',
             label: textsCap.amtPlgLabel,
-            labelDetails: textsCap.amtPlgLabelDetails,
+            labelDetails: (
+                <div>
+                    {textsCap.amtPlgLabelDetails + ' '}
+                    <a
+                        href='https://docs.totemaccounting.com/#/crowdloan/participation?id=what-is-a-pledge' target='_blank'
+                    >
+                        {textsCap.amtPlgLabelDetails2}
+                    </a>
+                </div>
+            ),
             min: 0,
             name: inputNames.amountPledged,
+            onChange: (values, inputs) => {
+                const rewardsIn = findInput(inputNames.amountRewards, inputs)
+                const contributed = values[inputNames.amountContributed] || 0
+                const toContribute = values[inputNames.amountToContribute] || 0
+                const pledge = values[inputNames.amountPledged]
+                const totalContribution = contributed + toContribute
+                rewardsIn.hidden = !(totalContribution >= 5)
+                rewardsIn.value = rewardsIn.hidden
+                    ? 0
+                    : calculateRewards(
+                        totalContribution,
+                        pledge,
+                        false,
+                        false,
+                        false,
+                    )
+                return true
+            },
             type: 'slider',
             value: 0,
         },
+        {
+            hidden: true, // visible only when total contribution amount is greater than 5
+            InputProps: tokenInputProps('Kapex'),
+            label: textsCap.amtRewardsLabel,
+            labelDetails: (
+                <a
+                    href='https://docs.totemaccounting.com/#/crowdloan/crowdloan-proposition?id=payouts'
+                    target='_blank'
+                >
+                    {textsCap.amtRewardsLabelDetails}
+                </a>
+            ),
+            name: inputNames.amountRewards,
+            readOnly: true,
+            type: 'number',
+        },
+        // Referral bonus doc: https://docs.totemaccounting.com/#/crowdloan/crowdloan-proposition?id=crowdloan-referral-bonus
     ]
 
     rxInputs.next(inputs)
@@ -409,10 +468,10 @@ export const getRxInputs = () => {
 /**
  * @name    handleCopyReferralUrl
  * 
- * @param   {*} e event
+ * @param   {*} event
  */
-const handleCopyReferralUrl = e => {
-    e.preventDefault()
+const handleCopyReferralUrl = event => {
+    event.preventDefault()
 
     const { id } = getUser()
     const url = `${window.location.href}?ref=${id}`
@@ -453,8 +512,7 @@ const handleError = (func, onFinally, modalId) => {
                 }
                 setState({ ...state })
             } else {
-                modalService.confirm({
-                    confirmButton: null,
+                modalService.info({
                     content,
                     subtitle: err?.subtitle,
                     title: err?.title,

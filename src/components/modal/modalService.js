@@ -4,7 +4,14 @@ import { v1 } from 'uuid'
 import { toProps } from '../reactUtils'
 import { isFn, isObj } from '../../utils/utils'
 import SimpleModal from './SimpleModal'
+import { translated } from '../../utils/languageHelper'
 
+const textsCap = translated({
+    cancel: 'cancel',
+    close: 'close',
+    confirm: 'confirm',
+    ruSure: 'are you sure?',
+}, true)[1]
 /**
  * @name    ModalService
  * @summary modal sevice provides a simple way to add, update and remove modals when used with the ModalsContainer
@@ -73,7 +80,7 @@ export class ModalService {
             actionButtons = [],
             closeButton,
             confirmButton,
-            content = 'Are you sure?',
+            content = textsCap.ruSure,
             onClose,
             onConfirm,
         } = confirmProps
@@ -85,12 +92,12 @@ export class ModalService {
         }
         closeButton = closeBtnProps !== null && {
             ...closeBtnProps,
-            children: 'Cancel',
+            children: closeBtnProps?.children || textsCap.cancel,
             onClick: (...args) => isFn(closeBtnProps?.onClick) && closeBtnProps.onClick(...args),
         }
         confirmButton = confirmBtnProps !== null && {
             ...confirmBtnProps || {},
-            children: confirmBtnProps.children || 'Confirm',
+            children: confirmBtnProps?.children || textsCap.confirm,
             onClick: (...args) => {
                 doConfirm(true)
                 isFn(confirmBtnProps?.onClick) && confirmBtnProps.onClick(...args)
@@ -124,6 +131,13 @@ export class ModalService {
      * @param   {String} id
      */
     delete = id => this.set(null, id)
+
+    info = (confirmProps = {}, id) => {
+        confirmProps.confirmButton = null
+        confirmProps.closeButton = null
+        confirmProps.disableEscapeKeyDown ??= false
+        return this.confirm(confirmProps, id)
+    }
 
     /**
      * @name    set

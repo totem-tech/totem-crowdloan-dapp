@@ -5,7 +5,11 @@ import modalService from './components/modal/modalService'
 
 export default () => {
     return (
-        <div style={{ maxWidth: 400, margin: '50px auto' }}>
+        <div style={{
+            maxWidth: 400,
+            margin: '50px auto',
+            padding: 15
+        }}>
             <CrowdloanForm />
 
             {/* Global modals */}

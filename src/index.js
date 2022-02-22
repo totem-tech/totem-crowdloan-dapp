@@ -1,11 +1,12 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
+import ComingSoon from './components/ComingSoon'
+import modalService from './components/modal/modalService'
 import blockchainHelper from './modules/blockchain'
-import App from './App'
 // import { Typography } from '@mui/material'
 import { crowdloanHelper } from './modules/blockchain'
-import ComingSoon from './components/ComingSoon'
 import identityHelper from './utils/substrate/identityHelper'
+import App from './App'
 
 const showComingSoon = process.env.REACT_APP_COMING_SOON === 'true'
 const appEnv = process.env.REACT_APP_ENV
@@ -28,6 +29,7 @@ if (!showComingSoon) {
         window.blockchain = blockchainHelper
         window.crowdloanHelper = crowdloanHelper
         window.identityHelper = identityHelper
+        window.modalService = modalService
         window.queryBlockchain = (func, args = [], multi, print = true) => blockchainHelper.query(
             func,
             args,

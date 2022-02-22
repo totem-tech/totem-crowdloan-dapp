@@ -9,8 +9,12 @@ import {
     DialogTitle,
 } from '@mui/material'
 import { toProps } from '../reactUtils'
+import { translated } from '../../utils/languageHelper'
 import { isFn } from '../../utils/utils'
 
+const textsCap = translated({
+    close: 'close',
+}, true)[1]
 export default function SimpleModal(props) {
     const {
         actionButtons = [],
@@ -117,7 +121,7 @@ SimpleModal.propTypes = {
     // Additional buttons to be displayed on the right side of the close button
     actionButtons: PropTypes.arrayOf(actionPropType),
     // The close button
-    closeButton: actionPropType,
+    closeButton: PropTypes.any,
     // Modal body content
     content: PropTypes.any,
     // Callback to be triggered when modal is closed
@@ -138,7 +142,7 @@ SimpleModal.propTypes = {
     //... any other props accepted by MUI Dialog component
 }
 SimpleModal.defaultProps = {
-    closeButton: 'Close',
+    closeButton: textsCap.close,
     // if `true`, will prevent closing when modal is clicked
     // disableBackdropClick: false,
     // if `true`, will close modal when escape button is pressed
