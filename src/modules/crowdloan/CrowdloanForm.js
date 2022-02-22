@@ -81,6 +81,18 @@ const useStyles = makeStyles(() => ({
         boxShadow: '7px 7px #f0f0f04f',
         padding: 25,
     },
+    subtitle: {
+        color: 'deeppink',
+        margin: 0,
+        lineHeight: 1,
+    },
+    title: {
+        borderBottom: '1px solid deeppink',
+        color: 'deeppink',
+        lineHeight: 1,
+        margin: 0,
+        paddingBottom: 5,
+    },
 }))
 
 export const inputNames = {
@@ -404,6 +416,16 @@ export const getRxInputs = (classes) => {
         ),
     })
     const inputs = [
+        {
+            name: 'title',
+            content: (
+                <div>
+                    <h4 className={classes.subtitle}>Contribute to</h4>
+                    <h1 className={classes.title}>Totem Crowdloan</h1>
+                </div>
+            ),
+            type: 'html',
+        },
         {
             inlineLabel: true,
             label: textsCap.idLabel,
