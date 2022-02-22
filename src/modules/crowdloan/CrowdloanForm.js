@@ -22,7 +22,7 @@ const PLEDGE_PERCENTAGE = 0.1 // 10%
 const [texts, textsCap] = translated({
     amtContdLabel: 'amount you already contributed',
     amtPlgLabel: 'amount you would like to pledge',
-    amtPlgLabelDetails: 'You can pledge maximum 10% of your total crowdloan contribution.',
+    amtPlgLabelDetails: 'You can pledge maximum 10% of your crowdloan contribution.',
     amtPlgLabelDetails2: 'learn more',
     amtRewardsLabel: 'estimated rewards',
     amtRewardsLabelDetails: 'learn more about rewards distribution',
@@ -30,6 +30,7 @@ const [texts, textsCap] = translated({
     amtToContLabelDetails: 'you can always come back and contribute as many times as you like before the end of the crowdloan',
     close: 'close',
     confirm: 'confirm',
+    contributed: 'contributed',
     copiedRefLink: 'your referral link has been copied to clipboard',
     copyRefLink: 'copy your referral link',
     enterAnAmount: 'enter an amount',
@@ -68,6 +69,14 @@ const logos = {
     totem: 'images/logos/colour-t-logo.svg',
 }
 const useStyles = makeStyles(() => ({
+    contributed: {
+        fontSize: 11,
+        position: 'absolute',
+        bottom: -3,
+        fontWeight: 'bold',
+        right: 16,
+        color: 'deeppink',
+    },
     link: {
         color: 'orange',
         '&:active': {
@@ -326,7 +335,10 @@ export const getRxInputs = (classes) => {
                     }),
                 {
                     label: pledgeIn.max,
-                    value: pledgeIn.max.toFixed(pledgeIn.max > 100 ? 0 : 2),
+                    value: Number(
+                        pledgeIn.max
+                            .toFixed(pledgeIn.max > 100 ? 0 : 2)
+                    ),
                 },
             ]
         pledgeIn.step = (pledgeIn.max || 0) < 10
@@ -346,7 +358,7 @@ export const getRxInputs = (classes) => {
         const identityIn = findInput(inputNames.identity, rxInputs.value)
         const pledgeIn = findInput(inputNames.amountPledged, rxInputs.value)
         contributedIn.value = 0
-        contributedIn.hidden = true
+        // contributedIn.hidden = true
 
         if (!identity) return true
 
@@ -360,7 +372,7 @@ export const getRxInputs = (classes) => {
             .getUserContributions(identity)
             .then(async (amountContributed) => {
                 contributedIn.value = amountContributed
-                contributedIn.hidden = amountContributed <= 0
+                // contributedIn.hidden = amountContributed <= 0
 
                 // fetch existing amount pledged (if any)
                 const client = await getClient()
@@ -435,7 +447,7 @@ export const getRxInputs = (classes) => {
             options: [],
             placeholder: textsCap.idPlaceholder,
             rxOptions: identityHelper.rxIdentities,
-            rxOptionsModifier: identityOptionsModifier(rxInputs),
+            rxOptionsModifier: identityOptionsModifier(rxInputs, classes),
             required: true,
             type: 'select',
         },
@@ -705,7 +717,7 @@ const handleSubmit = (rxInputs, setState) => async (_, values) => {
 }
 
 // Identity options modifier
-const identityOptionsModifier = rxInputs => identities => {
+const identityOptionsModifier = (rxInputs, classes) => identities => {
     identities = Array.from(identities)
     let options = identities
         .map(([address, { name, uri }]) => ({
@@ -745,6 +757,10 @@ const identityOptionsModifier = rxInputs => identities => {
                         float: 'right',
                     }}>
                         <Balance address={address} />
+                        {/* <div className={classes.contributed}>
+                            Contributed: {0.00} {blockchainHelper.unit.name}
+                        </div> */}
+                        <Contributed {...{ address, className: classes.contributed }} />
                     </div>
                 </div>
             )
@@ -758,4 +774,34 @@ const identityOptionsModifier = rxInputs => identities => {
 
     checkExtenstion(rxInputs)
     return options
+}
+
+const Contributed = ({ address, className }) => {
+    const [value, setValue] = useState()
+
+    useEffect(() => {
+        let mounted, unsubscribe
+
+        (async () => {
+            unsubscribe = await crowdloanHelper.getUserContributions(
+                address,
+                undefined,
+                undefined,
+                undefined,
+                setValue,
+            ).catch(() => { })
+        })()
+
+        return () => {
+            mounted = false
+            isFn(unsubscribe) && unsubscribe()
+        }
+    }, [address])
+    return !value
+        ? ''
+        : (
+            <div className={className} >
+                {textsCap.contributed}: {value} {blockchainHelper.unit.name}
+            </div >
+        )
 }
