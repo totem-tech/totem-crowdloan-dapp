@@ -27,6 +27,14 @@ const useStyles = makeStyles((theme) => ({
             fontWeight: 'bold',
         },
     },
+    logo: {
+        ignItems: 'center',
+        minWidth: 100,
+        minHeight: 50,
+        maxHeight: 50,
+        paddingTop: '10vh',
+        paddingBottom: '10vh',
+    },
 }))
 
 export default function ComingSoon() {
@@ -35,6 +43,7 @@ export default function ComingSoon() {
     return (
         <div className={classes.root}>
             <CssBaseline />
+            <img src='./images/joint-logos.svg' alt="logos" className={classes.logo} />
             <div className={classes.child} elevation={0}>
                 <Typography>
                     <br />
