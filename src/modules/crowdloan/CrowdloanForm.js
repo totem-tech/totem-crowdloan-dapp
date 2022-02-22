@@ -307,7 +307,6 @@ export const getRxInputs = () => {
             }
             handleError(
                 async () => {
-                    identityIn.message = null
                     let amountContributed = await crowdloanHelper
                         .getUserContributions(identity)
                         .catch(customError(textsCap.errFetchContribution))
@@ -323,6 +322,7 @@ export const getRxInputs = () => {
                         getValues(rxInputs.value),
                         rxInputs.value,
                     )
+                    identityIn.message = null
                     rxInputs.next([...rxInputs.value])
                 }
             )
