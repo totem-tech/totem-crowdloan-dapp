@@ -39,6 +39,7 @@ const [texts, textsCap] = translated({
     errPledgeSave: 'failed to store contribution data',
     errSignature: 'signature pre-validation failed',
     errTxFailed: 'transaction failed!',
+    fetchingContributions: 'checking existing contributions',
     idLabel: 'select your blockchain identity',
     idPlaceholder: 'select an identity',
     invite1: 'why not invite your friends to Totem?',
@@ -290,7 +291,7 @@ export const getRxInputs = () => {
             : pledgeIn.value
         return true
     }
-    const handleIdentityChange = (values, inputs) => {
+    const handleIdentityChange = async (values, inputs) => {
         const identity = values[inputNames.identity]
         const contributedIn = findInput(inputNames.amountContributed, inputs)
         const toContributeIn = findInput(inputNames.amountToContribute, inputs)
@@ -299,34 +300,42 @@ export const getRxInputs = () => {
         contributedIn.value = 0
         contributedIn.hidden = true
 
-        if (!!identity) {
-            identityIn.message = {
-                icon: true,
-                status: STATUS.loading,
-                text: 'Checking existing contributions',
-            }
-            handleError(
-                async () => {
-                    let amountContributed = await crowdloanHelper
-                        .getUserContributions(identity)
-                        .catch(customError(textsCap.errFetchContribution))
+        if (!identity) return true
 
-                    contributedIn.value = amountContributed
-                    contributedIn.hidden = amountContributed <= 0
-
-                    // fetch existing amount pledged (if any)
-                    const client = await getClient()
-                    const { amountPledged = 0 } = (await client.crowdloan(identity)) || {}
-                    pledgeIn.value = amountPledged
-                    toContributeIn.onChange(
-                        getValues(rxInputs.value),
-                        rxInputs.value,
-                    )
-                    identityIn.message = null
-                    rxInputs.next([...rxInputs.value])
-                }
-            )
+        identityIn.message = {
+            icon: true,
+            status: STATUS.loading,
+            text: textsCap.fetchingContributions,
         }
+        rxInputs.next([...rxInputs.value])
+
+        let amountContributed = await crowdloanHelper
+            .getUserContributions(identity)
+            .catch(err => err)
+        if (isError(amountContributed)) {
+            identityIn.message = {
+                header: textsCap.errFetchContribution,
+                icon: true,
+                status: STATUS.error,
+                text: `${amountContributed}`
+
+            }
+            return true
+        }
+
+        contributedIn.value = amountContributed
+        contributedIn.hidden = amountContributed <= 0
+
+        // fetch existing amount pledged (if any)
+        const client = await getClient()
+        const { amountPledged = 0 } = (await client.crowdloan(identity)) || {}
+        pledgeIn.value = amountPledged
+        toContributeIn.onChange(
+            getValues(rxInputs.value),
+            rxInputs.value,
+        )
+        identityIn.message = null
+        // rxInputs.next([...rxInputs.value])
         return true
     }
     const tokenInputProps = {
