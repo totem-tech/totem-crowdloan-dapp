@@ -9,7 +9,8 @@ const useStyles = makeStyles((theme) => ({
         backgroundRepeat: 'no-repeat',
         backgroundSize: 'cover',
         backgroundPosition: 'center',
-        minHeight: '100vh',
+        height: '100vh',
+        overflowX: 'auto',
     },
     link: {
         color: 'white',
@@ -24,7 +25,7 @@ const useStyles = makeStyles((theme) => ({
         width: '100%',
     },
     logo: {
-        margin: '30px 0 0 -15px',
+        margin: '20px 0 0 -15px',
         maxWidth: '90%',
     },
 }))

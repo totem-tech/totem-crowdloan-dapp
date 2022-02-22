@@ -7,7 +7,7 @@ export default () => {
     return (
         <div style={{
             maxWidth: 450,
-            margin: '50px auto',
+            margin: 'auto',
             padding: 15
         }}>
             <CrowdloanForm />
