@@ -8,7 +8,6 @@ const env = process.env.REACT_APP_ENV
 if (env !== 'production') {
     window.identityHelper = identityHelper
 }
-console.log('Env:', env)
 
 export default () => {
     return (

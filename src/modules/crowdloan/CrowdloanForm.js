@@ -35,6 +35,7 @@ const [texts, textsCap] = translated({
     errAmtMax: 'please enter an amount smaller or equal to',
     errAmtMin: 'please enter a number greater than',
     errBackup: 'to safeguard your account please click here to download a backup of your Totem account',
+    errFetchContribution: 'failed to retrieve previous contributions',
     errPledgeSave: 'failed to store contribution data',
     errSignature: 'signature pre-validation failed',
     errTxFailed: 'transaction failed!',
@@ -298,8 +299,12 @@ export const getRxInputs = () => {
         contributedIn.hidden = true
 
         if (!!identity) {
-            crowdloanHelper.getUserContributions(identity)
-                .then(async (amountContributed) => {
+            handleError(
+                async () => {
+                    let amountContributed = crowdloanHelper
+                        .getUserContributions(identity)
+                        .catch(customError(textsCap.errFetchContribution))
+
                     contributedIn.value = amountContributed
                     contributedIn.hidden = amountContributed <= 0
 
@@ -312,7 +317,8 @@ export const getRxInputs = () => {
                         rxInputs.value,
                     )
                     rxInputs.next([...rxInputs.value])
-                })
+                }
+            )
         }
         return true
     }

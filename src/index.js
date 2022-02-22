@@ -5,6 +5,7 @@ import App from './App'
 // import { Typography } from '@mui/material'
 import { crowdloanHelper } from './modules/blockchain'
 import ComingSoon from './components/ComingSoon'
+import identityHelper from './utils/substrate/identityHelper'
 
 const showComingSoon = process.env.REACT_APP_COMING_SOON === 'true'
 const appEnv = process.env.REACT_APP_ENV
@@ -26,6 +27,7 @@ if (!showComingSoon) {
     if (appEnv !== 'production') {
         window.blockchain = blockchainHelper
         window.crowdloanHelper = crowdloanHelper
+        window.identityHelper = identityHelper
         window.queryBlockchain = (func, args = [], multi, print = true) => blockchainHelper.query(
             func,
             args,
