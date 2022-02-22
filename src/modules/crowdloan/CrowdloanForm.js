@@ -24,6 +24,7 @@ const [texts, textsCap] = translated({
     amtPlgLabelDetails: 'you can pledge maximum 10% of your total crowdloan contribution',
     amtToContLabel: 'amount you would like to contribute now',
     amtToContLabelDetails: 'you can always come back and contribute as many times as you like before the end of the crowdloan',
+    close: 'close',
     confirm: 'confirm',
     copiedRefLink: 'your referral link has been copied to clipboard',
     copyRefLink: 'copy your referral link',
@@ -315,15 +316,12 @@ export const getRxInputs = () => {
                 contributedIn.hidden = amountContributed <= 0
 
                 // fetch existing amount pledged (if any)
-                console.log('getUserContributions: connecting to messaging server')
                 const client = await getClient()
-                console.log('getUserContributions: connected to messaging server', { client })
                 const { amountPledged = 0 } = amountContributed > 0
                     && await client
                         .crowdloan(identity)
                         .catch(() => ({}))
                     || {}
-                console.log('getUserContributions', { amountPledged })
                 pledgeIn.value = amountPledged
                 toContributeIn.onChange(
                     getValues(rxInputs.value),
@@ -420,6 +418,7 @@ const handleCopyReferralUrl = e => {
     const url = `${window.location.href}?ref=${id}`
     window.navigator.clipboard.writeText(url)
     modalService.confirm({
+        closeButton: textsCap.close,
         confirmButton: null,
         content: textsCap.copiedRefLink,
     })
