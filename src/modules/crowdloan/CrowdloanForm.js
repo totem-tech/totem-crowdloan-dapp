@@ -70,9 +70,9 @@ const logos = {
 }
 const useStyles = makeStyles(() => ({
     contributed: {
-        fontSize: 11,
+        fontSize: 12,
         position: 'absolute',
-        bottom: -3,
+        bottom: -4,
         fontWeight: 'bold',
         right: 16,
         color: 'deeppink',
