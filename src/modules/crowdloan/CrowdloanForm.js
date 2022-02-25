@@ -1,6 +1,16 @@
 import React, { useEffect, useState } from 'react'
 import { BehaviorSubject } from "rxjs"
-import { Button, CircularProgress, colors, InputAdornment, Step, StepLabel, Stepper } from '@mui/material'
+import { Settings } from '@mui/icons-material'
+import {
+    Box,
+    Button,
+    CircularProgress,
+    colors,
+    InputAdornment,
+    Step,
+    StepLabel,
+    Stepper,
+} from '@mui/material'
 import { makeStyles } from '@mui/styles'
 import FormBuilder from "../../components/form/FormBuilder"
 import { findInput, getValues } from '../../components/form/InputCriteriaHint'
@@ -8,6 +18,7 @@ import Message, { STATUS } from '../../components/Message'
 import modalService from '../../components/modal/modalService'
 import { getUser } from '../../utils/chatClient'
 import { translated } from '../../utils/languageHelper'
+import PromisE from '../../utils/PromisE'
 import identityHelper from '../../utils/substrate/identityHelper'
 import {
     arrSort,
@@ -18,15 +29,11 @@ import {
     objToUrlParams,
     textEllipsis,
 } from '../../utils/utils'
+import blockchainHelper, { crowdloanHelper, softCap, targetCap } from '../blockchain/'
 import Balance from '../blockchain/Balance'
 import enableExtionsion from '../blockchain/enableExtension'
-import blockchainHelper, { softCap, targetCap } from '../blockchain/'
-import getClient from '../messaging'
-import { Settings } from '@mui/icons-material'
-import { crowdloanHelper } from '../blockchain'
-import PromisE from '../../utils/PromisE'
+import getClient from '../messaging/'
 import useCrowdloanStatus from './useCrowdloanStatus'
-import { Box } from '@mui/system'
 
 const PLEDGE_PERCENTAGE = 0.1 // 10%
 const [texts, textsCap] = translated({
@@ -38,6 +45,11 @@ const [texts, textsCap] = translated({
     amtRewardsLabelDetails: 'learn more about rewards distribution',
     amtToContLabel: 'amount you would like to contribute now',
     amtToContLabelDetails: 'you can always come back and contribute as many times as you like before the end of the crowdloan',
+    step10PBonus: '10% bonus',
+    stepHardCap: 'hard cap',
+    stepStarted: 'started',
+    stepSoftCap: 'soft cap',
+    stepTargetCap: 'target cap',
     close: 'close',
     confirm: 'confirm',
     contributed: 'contributed',
@@ -65,8 +77,6 @@ const [texts, textsCap] = translated({
     invite1: 'why not invite your friends to Totem?',
     invite2: 'if your friends contribute you both will earn extra tokens.',
     missingParaId: 'missing parachain ID',
-    rewardSoftCap: 'additional soft cap bonus 10%',
-    rewardHardCap: 'additional target cap bonus 10%',
     signAndSend: 'sign and send',
     signatureHeader: 'sign message',
     signatureMsg: 'you are about to contribute to Totem crowdloan.',
@@ -161,24 +171,24 @@ export default function CrowdloanForm(props) {
             const steps = [
                 {
                     completed: true,
-                    label: 'Started',
+                    label: textsCap.stepStarted,
                 },
                 {
                     completed: status.softCapReached,
-                    label: 'Soft cap',
-                    labelDetails: '+10% bonus',
+                    label: textsCap.stepSoftCap,
+                    labelDetails: `+${textsCap.step10PBonus}`,
                     title: `${status.softCap} ${ticker}`,
                 },
                 {
                     completed: status.targetCapReached,
-                    label: 'Target cap',
-                    labelDetails: '+10% bonus',
+                    label: textsCap.stepTargetCap,
+                    labelDetails: `+${textsCap.step10PBonus}`,
                     title: `${status.targetCap} ${ticker}`,
                 },
                 status.targetCap < status.hardCap
                 && {
                     completed: !status.active,
-                    label: 'Hard cap',
+                    label: textsCap.stepHardCap,
                     title: `${status.hardCap} ${ticker}`,
                 },
             ].filter(Boolean)
@@ -191,14 +201,13 @@ export default function CrowdloanForm(props) {
                             <Step {...{
                                 completed: x.completed,
                                 key: i,
-                                sx: {
-                                    color: x.completed
-                                        ? 'deeppink'
-                                        : undefined,
-                                },
                                 title: x.title,
                             }}>
-                                <StepLabel>
+                                <StepLabel StepIconProps={{
+                                    style: {
+                                        color: x.completed && 'deeppink' || '',
+                                    }
+                                }}>
                                     {x.label}
                                     <div>
                                         <small>
@@ -817,11 +826,14 @@ const handleSubmit = (rxInputs, setState) => async (_, values) => {
         const identityIn = findInput(inputNames.identity, rxInputs.value)
         await identityIn.onChange(values, rxInputs.value, {})
         rxInputs.next([...rxInputs.value])
+
         // transaction was successful
+        // delay to prevent message being overriden by status message
         setTimeout(() => {
             setState({
                 message: {
                     header: textsCap.transactionCompleted,
+                    id: messageId,
                     icon: true,
                     status: STATUS.success,
                     text: (
@@ -842,7 +854,6 @@ const handleSubmit = (rxInputs, setState) => async (_, values) => {
                     )
                 }
             })
-
             scrollToMsg(100)
         }, 300)
     }
@@ -912,9 +923,6 @@ const identityOptionsModifier = (rxInputs, classes) => identities => {
                         float: 'right',
                     }}>
                         <Balance address={address} />
-                        {/* <div className={classes.contributed}>
-                            Contributed: {0.00} {blockchainHelper.unit.name}
-                        </div> */}
                         <Contributed {...{ address, className: classes.contributed }} />
                     </div>
                 </div>
@@ -943,7 +951,7 @@ const Contributed = ({ address, className }) => {
                 undefined,
                 undefined,
                 undefined,
-                setValue,
+                value => mounted && setValue(value),
             ).catch(() => { })
         })()
 

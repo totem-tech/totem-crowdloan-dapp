@@ -25,15 +25,3 @@ export default async function _getClient() {
     await subjectAsPromise(rxIsConnected, true)[0]
     return client
 }
-
-// const init = () => {
-//     console.log(new Date(), 'Logged into messaging service')
-//     const hash = generateHash(storage.countries.toArray())
-//     client
-//         .countries(hash)
-//         .then(countries => console.log({ countries }))
-// }
-
-// // wait until messaging server is connected successfully
-// subjectAsPromise(rxIsConnected, true)[0]
-//     .then(init)
