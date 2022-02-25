@@ -30,7 +30,7 @@ export const STATUS_ICON = {
     success: <CheckCircle color='success' style={iconStyle} />,
     warning: <Error color='warning' style={iconStyle} />,
 }
-export default function Message({ content, header, icon, status, style, text }) {
+export default function Message({ content, header, icon, id, status, style, text }) {
     status = STATUS[status] || STATUS.info
     const color = STATUS_COLOR[status] || STATUS_COLOR.info
     text = text || content
@@ -43,15 +43,19 @@ export default function Message({ content, header, icon, status, style, text }) 
     return !text && !header
         ? ''
         : (
-            <Box className='imessage' style={{
-                background: color[100],
-                borderRadius: 4,
-                margin: '10px 0',
-                maxWidth: '100%',
-                overflowX: 'auto',
-                padding: 7,
-                whiteSpace: 'auto',
-                ...style,
+            <Box {...{
+                className: 'message',
+                id,
+                style: {
+                    background: color[100],
+                    borderRadius: 4,
+                    margin: '10px 0',
+                    maxWidth: '100%',
+                    overflowX: 'auto',
+                    padding: 7,
+                    whiteSpace: 'auto',
+                    ...style,
+                }
             }}>
                 {!!icon && (
                     <div style={{
@@ -82,6 +86,6 @@ export default function Message({ content, header, icon, status, style, text }) 
                     )}
                     {text}
                 </Typography>
-            </Box>
+            </Box >
         )
 }

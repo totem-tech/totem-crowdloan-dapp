@@ -143,7 +143,7 @@ export default function FormInput(props) {
             delete attrs.content
             break
         case 'radio':
-            Component = Component || RadioGroup
+            Component = Component || imgPathJointLogo
             delete attrs.label
             inputEl = <Component {...attrs} />
             break

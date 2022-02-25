@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { BehaviorSubject } from "rxjs"
-import { Button, CircularProgress, colors, InputAdornment } from '@mui/material'
+import { Button, CircularProgress, colors, InputAdornment, Step, StepLabel, Stepper } from '@mui/material'
+import { makeStyles } from '@mui/styles'
 import FormBuilder from "../../components/form/FormBuilder"
 import { findInput, getValues } from '../../components/form/InputCriteriaHint'
 import Message, { STATUS } from '../../components/Message'
@@ -8,15 +9,24 @@ import modalService from '../../components/modal/modalService'
 import { getUser } from '../../utils/chatClient'
 import { translated } from '../../utils/languageHelper'
 import identityHelper from '../../utils/substrate/identityHelper'
-import { arrSort, deferred, isError, isFn, objClean, objCopy, objToUrlParams, textEllipsis } from '../../utils/utils'
+import {
+    arrSort,
+    deferred,
+    isError,
+    isFn,
+    objClean,
+    objToUrlParams,
+    textEllipsis,
+} from '../../utils/utils'
 import Balance from '../blockchain/Balance'
 import enableExtionsion from '../blockchain/enableExtension'
-import blockchainHelper from '../blockchain/blockchainHelper'
+import blockchainHelper, { softCap, targetCap } from '../blockchain/'
 import getClient from '../messaging'
 import { Settings } from '@mui/icons-material'
 import { crowdloanHelper } from '../blockchain'
 import PromisE from '../../utils/PromisE'
-import { makeStyles } from '@mui/styles'
+import useCrowdloanStatus from './useCrowdloanStatus'
+import { Box } from '@mui/system'
 
 const PLEDGE_PERCENTAGE = 0.1 // 10%
 const [texts, textsCap] = translated({
@@ -31,8 +41,10 @@ const [texts, textsCap] = translated({
     close: 'close',
     confirm: 'confirm',
     contributed: 'contributed',
+    contributeTo: 'contribute to',
     copiedRefLink: 'your referral link has been copied to clipboard',
     copyRefLink: 'copy your referral link',
+    totemCrowdloan: 'Totem crowdloan',
     enterAnAmount: 'enter an amount',
     errAccount1: 'in order to contribute to the Totem Crowdloan, you must create a Totem account.',
     errAccount2: 'create an account here.',
@@ -41,6 +53,8 @@ const [texts, textsCap] = translated({
     errAmtMax: 'please enter an amount smaller or equal to',
     errAmtMin: 'please enter a number greater than',
     errBackup: 'to safeguard your account please click here to download a backup of your Totem account',
+    errCrowdloanEnded: 'crowdloan has ended',
+    errCrowdloanEndedDetails: 'you can no longer make new contributions',
     errFetchContribution: 'failed to retrieve previous contributions',
     errPledgeSave: 'failed to store contribution data',
     errSignature: 'signature pre-validation failed',
@@ -51,10 +65,14 @@ const [texts, textsCap] = translated({
     invite1: 'why not invite your friends to Totem?',
     invite2: 'if your friends contribute you both will earn extra tokens.',
     missingParaId: 'missing parachain ID',
+    rewardSoftCap: 'additional soft cap bonus 10%',
+    rewardHardCap: 'additional target cap bonus 10%',
     signAndSend: 'sign and send',
     signatureHeader: 'sign message',
     signatureMsg: 'you are about to contribute to Totem crowdloan.',
     signatureMsg2: 'please click continue to approve and generate a signature for this transaction.',
+    signTxMsg: 'please sign the transaction on the extension pop up',
+    signDataMsg: 'please sign the message on the extension pop up',
     submit: 'contribute',
     transactionCompleted: 'transaction completed successfully!',
     txSuccessMsg: 'thank you for contributing!',
@@ -109,12 +127,15 @@ export const inputNames = {
     amountPledged: 'amountPledged',
     amountRewards: 'amountRewards',
     amountToContribute: 'amountToContribute',
+    crowdloanStatus: 'crowdloanStatus',
     identity: 'identity',
+    title: 'title',
 }
 
 export default function CrowdloanForm(props) {
     const classes = useStyles()
     const rxInputs = useState(() => getRxInputs(classes))[0]
+    let { error, loading, status = {} } = useCrowdloanStatus(crowdloanHelper, softCap, targetCap)
     const [state, setState] = useState({
         error: {
             status: STATUS.loading,
@@ -122,6 +143,77 @@ export default function CrowdloanForm(props) {
         },
         showLoader: true,
     })
+    error = state.error || error && {
+        status: STATUS.error,
+        text: error,
+    }
+
+    useEffect(() => {
+        if (!loading) {
+            const inputs = rxInputs.value
+            const titleIn = findInput(inputNames.title, inputs)
+            const statusIn = findInput(inputNames.crowdloanStatus, inputs)
+            const pledgeIn = findInput(inputNames.amountPledged, inputs)
+            statusIn.value = status
+            pledgeIn?.onChange(getValues(inputs), inputs)
+            titleIn.contentOrg = titleIn.contentOrg || titleIn.content
+            const ticker = blockchainHelper?.unit?.name || 'DOT'
+            const steps = [
+                {
+                    completed: true,
+                    label: 'Started',
+                },
+                {
+                    completed: status.softCapReached,
+                    label: 'Soft cap',
+                    labelDetails: '+10% bonus',
+                    title: `${status.softCap} ${ticker}`,
+                },
+                {
+                    completed: status.targetCapReached,
+                    label: 'Target cap',
+                    labelDetails: '+10% bonus',
+                    title: `${status.targetCap} ${ticker}`,
+                },
+                status.targetCap < status.hardCap
+                && {
+                    completed: !status.active,
+                    label: 'Hard cap',
+                    title: `${status.hardCap} ${ticker}`,
+                },
+            ].filter(Boolean)
+            titleIn.content = (
+                <Box sx={{ width: '100%' }}>
+                    {titleIn.contentOrg}
+                    <br />
+                    <Stepper alternativeLabel>
+                        {steps.map((x, i) => (
+                            <Step {...{
+                                completed: x.completed,
+                                key: i,
+                                sx: {
+                                    color: x.completed
+                                        ? 'deeppink'
+                                        : undefined,
+                                },
+                                title: x.title,
+                            }}>
+                                <StepLabel>
+                                    {x.label}
+                                    <div>
+                                        <small>
+                                            {x.labelDetails}
+                                        </small>
+                                    </div>
+                                </StepLabel>
+                            </Step>
+                        ))}
+                    </Stepper>
+                </Box>
+            )
+            rxInputs.next([...rxInputs.value])
+        }
+    }, [status])
 
     useEffect(() => {
         if (!crowdloanHelper.parachainId) {
@@ -136,6 +228,7 @@ export default function CrowdloanForm(props) {
         }
         const initialize = async () => {
             await getClient()
+            await blockchainHelper.getConnection()
             const { id } = getUser() || {}
             const redirectTo = window.location.href
             const appUrl = process.env.REACT_APP_TOTEM_APP_URL
@@ -181,7 +274,6 @@ export default function CrowdloanForm(props) {
                 }
             }
 
-
             return {
                 error,
                 showLoader: false,
@@ -205,17 +297,32 @@ export default function CrowdloanForm(props) {
     }, [])
 
     if (state.showLoader) return <center><CircularProgress /></center>
-    if (state.error) return <Message {...state.error} />
+    if (error) return <Message {...error} />
 
     return (
         <FormBuilder {...{
-            rxInputs,
-            onSubmit: handleSubmit(rxInputs, s => setState({ ...s })),
             ...props,
             ...state,
             formProps: {
                 className: classes.root,
             },
+            hiddenInputs: [
+                !loading
+                && !status.active
+                && inputNames.amountToContribute,
+            ].filter(Boolean),
+            message: !loading && !status.active
+                ? {
+                    header: textsCap.errCrowdloanEnded,
+                    icon: true,
+                    status: STATUS.warning,
+                    text: textsCap.errCrowdloanEndedDetails,
+                }
+                : state.message,
+            onSubmit: handleSubmit(rxInputs, s => setState({ ...s })),
+            rxInputs,
+            // hide submit button when not active
+            submitButton: !status.active ? null : undefined,
         }} />
     )
 }
@@ -294,12 +401,17 @@ const customError = (title, subtitle) => error => {
  */
 export const getRxInputs = (classes) => {
     const rxInputs = new BehaviorSubject()
-    const calculateRewards = (amtContribution = 0, amtPledge = 0, validReferred, softCapReached, targetCapReached) => {
+    const calculateRewards = (amtContribution = 0, amtPledge = 0, softCapReached, targetCapReached) => {
         let reward = amtContribution * .1
         if (amtPledge > 0) {
             const totalCommitment = amtContribution + amtPledge
             const ratio = amtPledge / amtContribution
             reward = totalCommitment * (1 + ratio) * .1
+        }
+        if (targetCapReached) {
+            reward *= 1.2
+        } else if (softCapReached) {
+            reward *= 1.1
         }
         return Number(reward.toFixed(2))
     }
@@ -405,6 +517,10 @@ export const getRxInputs = (classes) => {
         const rewardsIn = findInput(inputNames.amountRewards, inputs)
         const contributed = values[inputNames.amountContributed] || 0
         const toContribute = values[inputNames.amountToContribute] || 0
+        const {
+            softCapReached,
+            targetCapReached,
+        } = values[inputNames.crowdloanStatus] || {}
         const pledge = values[inputNames.amountPledged]
         const totalContribution = contributed + toContribute
         rewardsIn.hidden = !(totalContribution >= 5)
@@ -413,9 +529,8 @@ export const getRxInputs = (classes) => {
             : calculateRewards(
                 totalContribution,
                 pledge,
-                false,
-                false,
-                false,
+                softCapReached,
+                targetCapReached,
             )
         return true
     }
@@ -432,11 +547,16 @@ export const getRxInputs = (classes) => {
             name: 'title',
             content: (
                 <div>
-                    <h4 className={classes.subtitle}>Contribute to</h4>
-                    <h1 className={classes.title}>Totem Crowdloan</h1>
+                    <h4 className={classes.subtitle}>{textsCap.contributeTo}</h4>
+                    <h1 className={classes.title}>{textsCap.totemCrowdloan}</h1>
                 </div>
             ),
             type: 'html',
+        },
+        {
+            hidden: true,
+            name: inputNames.crowdloanStatus,
+            type: 'text',
         },
         {
             inlineLabel: true,
@@ -613,7 +733,37 @@ const handleSubmit = (rxInputs, setState) => async (_, values) => {
     setState(state)
     const handleConfirm = async (accepted) => {
         if (!accepted) return
+        const setExtensionMessage = (text) => {
+            if (!signer) return
+            // user needs to sign both the message and transaction using the extension
+            setState({
+                message: {
+                    id: messageId,
+                    status: STATUS.loading,
+                    text,
+                }
+            })
+            scrollToMsg(100)
+        }
 
+        // get transaction signer from PolkadotJS extension if identity was injected
+        const signer = !identityObj.uri && await identityHelper
+            .extension
+            .getSigner(identity)
+        const messageId = 'submit-message'
+        const scrollToMsg = (delay = 0) => setTimeout(() =>
+            document
+                .querySelector('#root > div')
+                ?.scrollTo(
+                    0,
+                    document
+                        ?.getElementById(messageId)
+                        ?.offsetTop
+                ),
+            delay
+        )
+
+        setExtensionMessage(textsCap.signDataMsg)
         const signature = await identityHelper
             .signature(identity, contribution)
         // pre-validate
@@ -625,29 +775,24 @@ const handleSubmit = (rxInputs, setState) => async (_, values) => {
             )
         if (!valid) throw new Error(textsCap.errSignature)
 
-        // store pledge data with signature to the messaging server
-        await client
-            .crowdloan({ ...contribution, signature })
-            .catch(customError(textsCap.errPledgeSave))
+        state.loading = true
+        setState(state)
 
-        // get transaction signer from PolkadotJS extension if identity was injected
-        const signer = !identityObj.uri && await identityHelper
-            .extension
-            .getSigner(identity)
-
+        // keep track of and display transaction status
         const rxUpdater = new BehaviorSubject({ status: { type: 'Initiating' } })
         unsubscribe = rxUpdater.subscribe(result => {
             state.message = {
                 header: textsCap.txInProgress,
                 icon: true,
+                id: messageId,
                 status: STATUS.loading,
                 text: `${textsCap.txStatus}: ${result?.status?.type || ''}`
             }
             setState(state)
         })
+        scrollToMsg(100)
 
-        state.loading = true
-        setState(state)
+        setExtensionMessage(textsCap.signTxMsg)
         // execute the contribution transaction
         const [blockHash] = await blockchainHelper
             .signAndSend(
@@ -663,33 +808,43 @@ const handleSubmit = (rxInputs, setState) => async (_, values) => {
             )
             .catch(customError(textsCap.errTxFailed))
 
+        // store pledge data with signature to the messaging server
+        await client
+            .crowdloan({ ...contribution, signature })
+            .catch(customError(textsCap.errPledgeSave))
+
+        // trigger identity onChange to update contributed amount
         const identityIn = findInput(inputNames.identity, rxInputs.value)
         await identityIn.onChange(values, rxInputs.value, {})
         rxInputs.next([...rxInputs.value])
         // transaction was successful
-        setTimeout(() => setState({
-            message: {
-                header: textsCap.transactionCompleted,
-                icon: true,
-                status: STATUS.success,
-                text: (
-                    <div>
-                        {textsCap.txSuccessMsg} {textsCap.txSuccessMsg2}
-                        <br />
-                        <br />
-                        {textsCap.invite1} {textsCap.invite2}
-                        <br />
-                        <Button
-                            color='success'
-                            onClick={handleCopyReferralUrl}
-                            variant='outlined'
-                        >
-                            {textsCap.copyRefLink}
-                        </Button>
-                    </div>
-                )
-            }
-        }), 500)
+        setTimeout(() => {
+            setState({
+                message: {
+                    header: textsCap.transactionCompleted,
+                    icon: true,
+                    status: STATUS.success,
+                    text: (
+                        <div>
+                            {textsCap.txSuccessMsg} {textsCap.txSuccessMsg2}
+                            <br />
+                            <br />
+                            {textsCap.invite1} {textsCap.invite2}
+                            <br />
+                            <Button
+                                color='success'
+                                onClick={handleCopyReferralUrl}
+                                variant='outlined'
+                            >
+                                {textsCap.copyRefLink}
+                            </Button>
+                        </div>
+                    )
+                }
+            })
+
+            scrollToMsg(100)
+        }, 300)
     }
 
     modalService.confirm({

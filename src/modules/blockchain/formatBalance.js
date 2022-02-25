@@ -1,5 +1,5 @@
 import { formatNumber, shorten } from '../../utils/number'
-import bcHelper, { BlockchainHelper } from './blockchainHelper'
+import bcHelper, { BlockchainHelper } from '.'
 
 /**
  * @name    formatAmount
