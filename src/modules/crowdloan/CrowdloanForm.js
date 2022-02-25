@@ -331,7 +331,9 @@ export default function CrowdloanForm(props) {
             onSubmit: handleSubmit(rxInputs, s => setState({ ...s })),
             rxInputs,
             // hide submit button when not active
-            submitButton: !status.active ? null : undefined,
+            submitButton: !status.active
+                ? null
+                : props.submitButton,
         }} />
     )
 }
