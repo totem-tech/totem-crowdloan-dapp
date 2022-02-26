@@ -159,7 +159,7 @@ export default function CrowdloanForm(props) {
     }
 
     useEffect(() => {
-        if (!loading) {
+        if (!loading && status.isValid) {
             const inputs = rxInputs.value
             const titleIn = findInput(inputNames.title, inputs)
             const statusIn = findInput(inputNames.crowdloanStatus, inputs)
@@ -236,8 +236,6 @@ export default function CrowdloanForm(props) {
             return
         }
         const initialize = async () => {
-            await getClient()
-            await blockchainHelper.getConnection()
             const { id } = getUser() || {}
             const redirectTo = window.location.href
             const appUrl = process.env.REACT_APP_TOTEM_APP_URL
@@ -283,6 +281,13 @@ export default function CrowdloanForm(props) {
                 }
             }
 
+            if (!error) {
+                await getClient()
+                await blockchainHelper
+                    .getConnection()
+                    .catch(customError('Failed to connect to blockchain'))
+            }
+
             return {
                 error,
                 showLoader: false,
@@ -298,7 +303,9 @@ export default function CrowdloanForm(props) {
                         state = { ...result, ...state }
                         setState(state)
 
-                        !state.error && handleError(enableExtionsion(), null, setState)
+                        if (state.error) return
+
+                        handleError(enableExtionsion(), null, setState)
                     },
                     'initialize'
                 )

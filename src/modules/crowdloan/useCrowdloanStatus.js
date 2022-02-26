@@ -20,7 +20,7 @@ export const CROWDLOAN_STATUS = {
  * @param   {Number}            softCap         (optional)
  * @param   {Number}            targetCap       (optional)
  * 
- * @returns {Array} [error, status]
+ * @returns {Array} {error, loading, status: {active, isValid....}}
  */
 export default function useCrowdloanStatus(crowdloanHelper, softCap, targetCap) {
     const [{ status, loading, error }, setState] = useState({
@@ -30,16 +30,18 @@ export default function useCrowdloanStatus(crowdloanHelper, softCap, targetCap) 
     useEffect(() => {
         let mounted = true
         const unsub = {}
-        let amountRaised, currentBlock, endBlock, hardCap, status
+        let amountRaised, currentBlock, endBlock, hardCap, status, isValid
         const subscribe = async () => {
             unsub.block = await blockchainHelper.getCurrentBlock(block => {
                 currentBlock = block
                 updateStatus()
             })
-            unsub.funds = await crowdloanHelper.getFunds(({ cap, end, raised }) => {
+            unsub.funds = await crowdloanHelper.getFunds(result => {
+                const { cap = 0, end = 0, raised = 0 } = result || {}
                 amountRaised = raised
                 endBlock = end
                 hardCap = cap
+                isValid = cap > 0 && end > 0
                 updateStatus()
             })
         }
@@ -53,10 +55,11 @@ export default function useCrowdloanStatus(crowdloanHelper, softCap, targetCap) 
             if (!allReceived) return
 
             const _status = {
-                active: currentBlock < endBlock && amountRaised < hardCap,
+                active: isValid && currentBlock < endBlock && amountRaised < hardCap,
                 amountRaised,
                 hardCap,
                 hardCapReached: amountRaised >= hardCap,
+                isValid,
                 softCap,
                 softCapReached: isValidNumber(softCap) && amountRaised >= softCap,
                 targetCap,
@@ -72,8 +75,8 @@ export default function useCrowdloanStatus(crowdloanHelper, softCap, targetCap) 
             .catch(err =>
                 mounted
                 && setState({
-                    error: `${err}`
-                        .replace('Error: ', ''),
+                    error: `${err}`.replace('Error: ', ''),
+                    loading: false,
                 })
             )
 
