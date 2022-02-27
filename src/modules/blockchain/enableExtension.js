@@ -15,5 +15,5 @@ export default async function enableExtionsion() {
     console.log('Enable extension')
 
     await cryptoWaitReady()
-    return await identityHelper.enableExtionsion('Totem Crowdloan DApp')
+    return await identityHelper.enableExtionsion('Totem KAPEX Parachain Crowdloan DApp')
 }

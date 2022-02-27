@@ -1,2 +1,2 @@
-# Totem Crowdloan DApp
+# Totem KAPEX Parachain Crowdloan DApp
 

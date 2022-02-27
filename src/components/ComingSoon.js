@@ -29,7 +29,7 @@ export default function ComingSoon() {
         <div className={classes.root} elevation={0}>
             <Typography component='div'>
                 <br />
-                <h1>Totem Crowdloan is coming soon.</h1>
+                <h1>Totem KAPEX Parachain Crowdloan is coming soon.</h1>
                 <h3>
                     Stay tuned by{' '}
                     <a className={classes.link} href='https://totem.live/?form=newslettersignup'>
