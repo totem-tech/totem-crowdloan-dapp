@@ -1,0 +1,47 @@
+##############
+# Any variable not explicitly specified as "(optional)" is required
+##############
+
+# Environment. If not production, extra logging will be enabled and certain services/variables will be assigned to window object for debugging purposes.
+REACT_APP_ENV=production
+
+# Whether to display the coming soon page
+REACT_APP_COMING_SOON=true
+
+# Auto disconnect delay in milliseconds for blockchain node.
+# If positive integer,  blockchain will auto disconnect after making a query with the given delay duration.
+# Regardless of auto-disconnect settings, connection will be established before making a query or sending a transaction.
+REACT_APP_DISCONNECT_DELAY_MS=0
+
+# Title of the blockchain network
+REACT_APP_CHAIN_TITLE=Polkadot Network
+
+# Title to be displayed above the form as: `${dappTitle} crowdloan`
+REACT_APP_DAPP_TITLE=Totem Kapex
+
+# number of tokens per unit (optional) Default: 1e10
+REACT_APP_UNIT_AMOUNT=10000000000
+
+# Number of decimal places. Default: 4
+REACT_APP_UNIT_DECIMALS=4
+
+# Unit name (optional) Default: "DOT"
+REACT_APP_UNIT_NAME=DOT
+
+# Substrate based blockchain node URL
+REACT_APP_NODE_URL=wss://rpc.polkadot.io
+
+# Parachain ID
+REACT_APP_PARACHAIN_ID=2007
+
+# Totem Messaging Server URL (optional) Defualt: wss://totem.live:3001
+REACT_APP_MESSAGING_SERVER_URL=wss://totem.live:3001
+
+# Totem Web App URL
+REACT_APP_TOTEM_APP_URL=https://totem.live
+
+# Contribution Soft Cap (1M)
+REACT_APP_SOFT_CAP=1000000
+
+# Contribution Target Cap (10M)
+REACT_APP_TARGET_CAP=10000000

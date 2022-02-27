@@ -4,14 +4,6 @@ import CrowdloanHelper from '../../utils/substrate/CrowdloanHelper'
 import { deferred, isValidNumber } from '../../utils/utils'
 import blockchainHelper from '../blockchain/'
 
-export const CROWDLOAN_STATUS = {
-    active: 'active',
-    ended: 'ended', // auction period ended
-    softCapRaised: 'softCapRaised',
-    targetCapReached: 'targetCapReached',
-    hardCapReached: 'hardCapReached',
-}
-
 /**
  * @name    useCrowdloanStatus
  * @summary React hook to get the current status of a parachain

@@ -11,7 +11,6 @@ import {
     StepLabel,
     Stepper,
 } from '@mui/material'
-import { makeStyles } from '@mui/styles'
 import FormBuilder from "../../components/form/FormBuilder"
 import { findInput, getValues } from '../../components/form/InputCriteriaHint'
 import Message, { STATUS } from '../../components/Message'
@@ -34,6 +33,8 @@ import Balance from '../blockchain/Balance'
 import enableExtionsion from '../blockchain/enableExtension'
 import getClient from '../messaging/'
 import useCrowdloanStatus from './useCrowdloanStatus'
+import useStyles from './useStyles'
+import Contributed from './Contributed'
 
 const PLEDGE_PERCENTAGE = 0.1 // 10%
 const [texts, textsCap] = translated({
@@ -56,7 +57,7 @@ const [texts, textsCap] = translated({
     contributeTo: 'contribute to',
     copiedRefLink: 'your referral link has been copied to clipboard',
     copyRefLink: 'copy your referral link',
-    totemCrowdloan: 'Totem crowdloan',
+    crowdloan: 'crowdloan',
     enterAnAmount: 'enter an amount',
     errAccount1: 'in order to contribute to the Totem Crowdloan, you must create a Totem account.',
     errAccount2: 'create an account here.',
@@ -65,6 +66,7 @@ const [texts, textsCap] = translated({
     errAmtMax: 'please enter an amount smaller or equal to',
     errAmtMin: 'please enter a number greater than',
     errBackup: 'to safeguard your account please click here to download a backup of your Totem account',
+    errBlockchainConnection: 'failed to connect to blockchain',
     errCrowdloanEnded: 'crowdloan has ended',
     errCrowdloanEndedDetails: 'you can no longer make new contributions',
     errFetchContribution: 'failed to retrieve previous contributions',
@@ -96,41 +98,6 @@ const logos = {
     polkadot: 'images/polkadot-logo-circle.svg',
     totem: 'images/logos/colour-t-logo.svg',
 }
-const useStyles = makeStyles(() => ({
-    contributed: {
-        fontSize: 12,
-        position: 'absolute',
-        bottom: -4,
-        fontWeight: 'bold',
-        right: 16,
-        color: 'deeppink',
-    },
-    link: {
-        color: 'orange',
-        '&:active': {
-            color: 'orange',
-            fontWeight: 'bold',
-        },
-    },
-    root: {
-        background: 'white',
-        borderRadius: 5,
-        boxShadow: '7px 7px #f0f0f04f',
-        padding: 25,
-    },
-    subtitle: {
-        color: 'deeppink',
-        margin: 0,
-        lineHeight: 1,
-    },
-    title: {
-        borderBottom: '1px solid deeppink',
-        color: 'deeppink',
-        lineHeight: 1,
-        margin: 0,
-        paddingBottom: 5,
-    },
-}))
 
 export const inputNames = {
     amountContributed: 'amountContributed',
@@ -159,6 +126,7 @@ export default function CrowdloanForm(props) {
     }
 
     useEffect(() => {
+        // add steps to indicate crowdloan status
         if (!loading && status.isValid) {
             const inputs = rxInputs.value
             const titleIn = findInput(inputNames.title, inputs)
@@ -282,10 +250,12 @@ export default function CrowdloanForm(props) {
             }
 
             if (!error) {
-                await getClient()
-                await blockchainHelper
-                    .getConnection()
-                    .catch(customError('Failed to connect to blockchain'))
+                handleError(getClient())
+                handleError(
+                    blockchainHelper
+                        .getConnection()
+                        .catch(customError(textsCap.errBlockchainConnection))
+                )
             }
 
             return {
@@ -395,7 +365,7 @@ const checkExtenstion = deferred(rxInputs => {
 
 /**
  * @name    customError
- * @name    
+ * @summary create a custom Error with title and subtitle properties to be used with Modal or Message   
  * 
  * @param {String|*} title 
  * @param {String|*} subtitle 
@@ -566,7 +536,7 @@ export const getRxInputs = (classes) => {
             content: (
                 <div>
                     <h4 className={classes.subtitle}>{textsCap.contributeTo}</h4>
-                    <h1 className={classes.title}>{textsCap.totemCrowdloan}</h1>
+                    <h1 className={classes.title}>{crowdloanHelper.title} {textsCap.crowdloan}</h1>
                 </div>
             ),
             type: 'html',
@@ -681,10 +651,10 @@ const handleCopyReferralUrl = event => {
 
 /**
  * @name    handleError
- * @summary Catches all errors while executing the given function and shows a modal to display the error message.
+ * @summary Catches all errors while executing a callback function and shows a modal to display the error message.
  * To display modal title and subtitle use the `customError()` function.
  * 
- * @param   {Function}          func        function to be executed   
+ * @param   {Function}          func        function to be executed on callback
  * @param   {Function}          onFinally   (optional)  callback to be executed after execution of `func`
  * @param   {Function|String}   modalId     (optional)  modal ID or setState function
  * 
@@ -695,6 +665,7 @@ const handleError = (func, onFinally, modalId) => {
     let result
     return async (...args) => {
         try {
+            if (!isFn(func)) return
             result = await func(...args)
         } catch (err) {
             const content = err?.message || `${err}`
@@ -720,6 +691,15 @@ const handleError = (func, onFinally, modalId) => {
     }
 }
 
+/**
+ * @name    handleSubmit
+ * @summary returns form submit handler
+ * 
+ * @param   {Object}    rxInputs 
+ * @param   {Function}  setState 
+ * 
+ * @returns {Function}  
+ */
 const handleSubmit = (rxInputs, setState) => async (_, values) => {
     const client = await getClient()
     const identity = values[inputNames.identity]
@@ -891,7 +871,14 @@ const handleSubmit = (rxInputs, setState) => async (_, values) => {
     }, modalId)
 }
 
-// Identity options modifier
+
+/**
+ * @name    identityOptionsModifier
+ * @param   {Object} rxInputs 
+ * @param   {Object} classes 
+ * 
+ * @returns {Function}
+ */
 const identityOptionsModifier = (rxInputs, classes) => identities => {
     identities = Array.from(identities)
     let options = identities
@@ -932,7 +919,11 @@ const identityOptionsModifier = (rxInputs, classes) => identities => {
                         float: 'right',
                     }}>
                         <Balance address={address} />
-                        <Contributed {...{ address, className: classes.contributed }} />
+                        <Contributed {...{
+                            address,
+                            className: classes.contributed,
+                            prefix: `${textsCap.contributed}: `,
+                        }} />
                     </div>
                 </div>
             )
@@ -946,34 +937,4 @@ const identityOptionsModifier = (rxInputs, classes) => identities => {
 
     checkExtenstion(rxInputs)
     return options
-}
-
-const Contributed = ({ address, className }) => {
-    const [value, setValue] = useState()
-
-    useEffect(() => {
-        let mounted, unsubscribe
-
-        (async () => {
-            unsubscribe = await crowdloanHelper.getUserContributions(
-                address,
-                undefined,
-                undefined,
-                undefined,
-                value => mounted && setValue(value),
-            ).catch(() => { })
-        })()
-
-        return () => {
-            mounted = false
-            isFn(unsubscribe) && unsubscribe()
-        }
-    }, [address])
-    return !value
-        ? ''
-        : (
-            <div className={className} >
-                {textsCap.contributed}: {value} {blockchainHelper.unit.name}
-            </div >
-        )
 }
