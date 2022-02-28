@@ -19,7 +19,7 @@ export default makeStyles(() => ({
     root: {
         background: 'white',
         borderRadius: 5,
-        boxShadow: '7px 7px #f0f0f04f',
+        // boxShadow: '7px 7px #f0f0f04f',
         padding: 25,
     },
     subtitle: {
