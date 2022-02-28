@@ -160,6 +160,7 @@ export default function CrowdloanForm(props) {
                     title: `${status.hardCap} ${ticker}`,
                 },
             ].filter(Boolean)
+            console.log({ status })
             titleIn.content = (
                 <Box sx={{ width: '100%' }}>
                     {titleIn.contentOrg}
@@ -922,6 +923,7 @@ const identityOptionsModifier = (rxInputs, classes) => identities => {
                         <Contributed {...{
                             address,
                             className: classes.contributed,
+                            key: address,
                             prefix: `${textsCap.contributed}: `,
                         }} />
                     </div>

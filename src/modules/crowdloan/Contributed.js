@@ -13,7 +13,7 @@ export default function Contributed({ address, className, prefix, style, suffix 
     const [value, setValue] = useState()
 
     useEffect(() => {
-        let mounted, unsubscribe
+        let mounted = true, unsubscribe
 
         (async () => {
             unsubscribe = await crowdloanHelper.getUserContributions(
@@ -22,7 +22,7 @@ export default function Contributed({ address, className, prefix, style, suffix 
                 undefined,
                 undefined,
                 value => mounted && setValue(value),
-            ).catch(() => { })
+            ).catch(err => console.error('Failed to retrieve user contributions', err))
         })()
 
         return () => {
