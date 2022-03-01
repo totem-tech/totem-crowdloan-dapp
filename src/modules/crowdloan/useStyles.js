@@ -1,6 +1,11 @@
+import { colors } from '@mui/material'
 import { makeStyles } from '@mui/styles'
 
 export default makeStyles(() => ({
+    amountRaised: {
+        margin: '15px 0 -14px',
+        color: 'deeppink',
+    },
     contributed: {
         fontSize: 12,
         position: 'absolute',
@@ -10,9 +15,9 @@ export default makeStyles(() => ({
         color: 'deeppink',
     },
     link: {
-        color: 'orange',
+        color: colors.orange[800],
         '&:active': {
-            color: 'orange',
+            color: colors.orange[800],
             fontWeight: 'bold',
         },
     },

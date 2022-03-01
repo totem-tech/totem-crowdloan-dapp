@@ -28,13 +28,17 @@ import {
     objToUrlParams,
     textEllipsis,
 } from '../../utils/utils'
-import blockchainHelper, { crowdloanHelper, softCap, targetCap } from '../blockchain/'
+import blockchainHelper, { crowdloanHelper, softCap } from '../blockchain/'
 import Balance from '../blockchain/Balance'
 import enableExtionsion from '../blockchain/enableExtension'
 import getClient from '../messaging/'
 import useCrowdloanStatus from './useCrowdloanStatus'
 import useStyles from './useStyles'
 import Contributed from './Contributed'
+import { shorten } from '../../utils/number'
+import FormTitle from './FormTitle'
+import { useRxSubject } from '../../utils/reactHelper'
+import { checkExtenstion } from './checkExtension'
 
 const PLEDGE_PERCENTAGE = 0.1 // 10%
 const [texts, textsCap] = translated({
@@ -50,7 +54,6 @@ const [texts, textsCap] = translated({
     stepHardCap: 'hard cap',
     stepStarted: 'started',
     stepSoftCap: 'soft cap',
-    stepTargetCap: 'target cap',
     close: 'close',
     confirm: 'confirm',
     contributed: 'contributed',
@@ -111,8 +114,6 @@ export const inputNames = {
 
 export default function CrowdloanForm(props) {
     const classes = useStyles()
-    const rxInputs = useState(() => getRxInputs(classes))[0]
-    let { error, loading, status = {} } = useCrowdloanStatus(crowdloanHelper, softCap, targetCap)
     const [state, setState] = useState({
         error: {
             status: STATUS.loading,
@@ -120,78 +121,9 @@ export default function CrowdloanForm(props) {
         },
         showLoader: true,
     })
-    error = state.error || error && {
-        status: STATUS.error,
-        text: error,
-    }
-
-    useEffect(() => {
-        // add steps to indicate crowdloan status
-        if (!loading && status.isValid) {
-            const inputs = rxInputs.value
-            const titleIn = findInput(inputNames.title, inputs)
-            const statusIn = findInput(inputNames.crowdloanStatus, inputs)
-            const pledgeIn = findInput(inputNames.amountPledged, inputs)
-            statusIn.value = status
-            pledgeIn?.onChange(getValues(inputs), inputs)
-            titleIn.contentOrg = titleIn.contentOrg || titleIn.content
-            const ticker = blockchainHelper?.unit?.name || 'DOT'
-            const steps = [
-                {
-                    completed: true,
-                    label: textsCap.stepStarted,
-                },
-                {
-                    completed: status.softCapReached,
-                    label: textsCap.stepSoftCap,
-                    labelDetails: `+${textsCap.step10PBonus}`,
-                    title: `${status.softCap} ${ticker}`,
-                },
-                {
-                    completed: status.targetCapReached,
-                    label: textsCap.stepTargetCap,
-                    labelDetails: `+${textsCap.step10PBonus}`,
-                    title: `${status.targetCap} ${ticker}`,
-                },
-                status.targetCap < status.hardCap
-                && {
-                    completed: !status.active,
-                    label: textsCap.stepHardCap,
-                    title: `${status.hardCap} ${ticker}`,
-                },
-            ].filter(Boolean)
-            console.log({ status })
-            titleIn.content = (
-                <Box sx={{ width: '100%' }}>
-                    {titleIn.contentOrg}
-                    <br />
-                    <Stepper alternativeLabel>
-                        {steps.map((x, i) => (
-                            <Step {...{
-                                completed: x.completed,
-                                key: i,
-                                title: x.title,
-                            }}>
-                                <StepLabel StepIconProps={{
-                                    style: {
-                                        color: x.completed && 'deeppink' || '',
-                                    }
-                                }}>
-                                    {x.label}
-                                    <div>
-                                        <small>
-                                            {x.labelDetails}
-                                        </small>
-                                    </div>
-                                </StepLabel>
-                            </Step>
-                        ))}
-                    </Stepper>
-                </Box>
-            )
-            rxInputs.next([...rxInputs.value])
-        }
-    }, [status])
+    const rxInputs = useState(() => getRxInputs(classes))[0]
+    let { error, loading, status = {} } = useCrowdloanStatus(crowdloanHelper, softCap)
+    const [inputs] = useRxSubject(rxInputs)
 
     useEffect(() => {
         if (!crowdloanHelper.parachainId) {
@@ -283,8 +215,38 @@ export default function CrowdloanForm(props) {
             )
     }, [])
 
+    useEffect(() => {
+        if (!loading) {
+            const statusIn = findInput(
+                inputNames.crowdloanStatus,
+                rxInputs.value,
+            )
+            const pledgeIn = findInput(
+                inputNames.amountPledged,
+                rxInputs.value,
+            )
+            // trigger an update on the pledge input which will update the calculated rewards
+            pledgeIn?.onChange(
+                getValues(inputs),
+                inputs,
+            )
+            statusIn.value = status
+            rxInputs.next([...rxInputs.value])
+        }
+    }, [status])
+
     if (state.showLoader) return <center><CircularProgress /></center>
+
+    error = !!error
+        ? {
+            status: STATUS.error,
+            text: error,
+        }
+        : state.error
     if (error) return <Message {...error} />
+
+    const statusIn = findInput(inputNames.crowdloanStatus, inputs) || {}
+    const { active, isValid } = statusIn.value || {}
 
     return (
         <FormBuilder {...{
@@ -294,75 +256,20 @@ export default function CrowdloanForm(props) {
                 className: classes.root,
             },
             hiddenInputs: [
-                !loading
-                && !status.active
-                && inputNames.amountToContribute,
+                // show amountToContribute only when crowdloan is active
+                !active && inputNames.amountToContribute,
+                // show contributed only after crowdloan is finished
+                (!isValid || active) && inputNames.amountContributed,
             ].filter(Boolean),
-            message: !loading && !status.active
-                ? {
-                    header: textsCap.errCrowdloanEnded,
-                    icon: true,
-                    status: STATUS.warning,
-                    text: textsCap.errCrowdloanEndedDetails,
-                }
-                : state.message,
             onSubmit: handleSubmit(rxInputs, s => setState({ ...s })),
             rxInputs,
             // hide submit button when not active
-            submitButton: !status.active
+            submitButton: !active
                 ? null
-                : props.submitButton,
+                : textsCap.submit,
         }} />
     )
 }
-CrowdloanForm.defaultProps = {
-    submitButton: textsCap.submit
-}
-
-/**
- * @name    checkExtenstion
- * @summary Check if extension is enabled and any indentities were injected
- * 
- * @prop    {*} rxInputs    RxJS subject containing array of input definitions
- */
-const checkExtenstion = deferred(rxInputs => {
-    if (!rxInputs.value) return
-    const injected = identityHelper
-        .search({ uri: null }, true)
-    const identityIn = findInput(inputNames.identity, rxInputs)
-    identityIn.message = injected.size > 0
-        ? null
-        : { // extension is either not installed, not enabled or user rejected to allow access
-            status: STATUS.warning,
-            text: (
-                <div>
-                    Could not access PolkadotJS Extension! Please install and enable the browser extension from here:
-                    <br />
-                    <a href="https://polkadot.js.org/extension/">
-                        https://polkadot.js.org/extension/
-                    </a>
-                    <br />
-                    <br />
-                    If you have previosly denied access from this site, please follow steps below:
-                    <ol>
-                        <li>Open the extension</li>
-                        <li>
-                            Click on
-                            <Settings style={{
-                                fontSize: 23,
-                                padding: 0,
-                                margin: '0 0 -7px 0',
-                            }} /> the settings icon
-                        </li>
-                        <li>Click on "Manage Website Access"</li>
-                        <li>Enable access for {window.location.host}</li>
-                    </ol>
-                    Alternatively, you can continue using the DApp with your localy stored Totem identities (<b>not recommended</b>).
-                </div>
-            ),
-        }
-    rxInputs.next(rxInputs.value)
-}, 300)
 
 /**
  * @name    customError
@@ -413,7 +320,10 @@ export const getRxInputs = (classes) => {
         pledgeIn.disabled = disabled
         pledgeIn.max = disabled
             ? 0
-            : eval((totalContribution * PLEDGE_PERCENTAGE).toFixed(2)) || 0
+            : Number(
+                (totalContribution * PLEDGE_PERCENTAGE)
+                    .toFixed(2)
+            ) || 0
         pledgeIn.min = pledgeIn.min > pledgeIn.max
             ? pledgeIn.max
             : pledgeIn.min
@@ -449,7 +359,7 @@ export const getRxInputs = (classes) => {
             ? pledgeIn.max
             : pledgeIn.value
 
-        pledgeIn.onChange(getValues(inputs), inputs)
+        pledgeIn?.onChange(getValues(inputs), inputs)
         return true
     }
     const handleIdentityChange = (values, inputs) => {
@@ -459,8 +369,6 @@ export const getRxInputs = (classes) => {
         const identityIn = findInput(inputNames.identity, rxInputs.value)
         const pledgeIn = findInput(inputNames.amountPledged, rxInputs.value)
         contributedIn.value = 0
-        // contributedIn.hidden = true
-
         if (!identity) return true
 
         identityIn.message = {
@@ -534,12 +442,7 @@ export const getRxInputs = (classes) => {
     const inputs = [
         {
             name: 'title',
-            content: (
-                <div>
-                    <h4 className={classes.subtitle}>{textsCap.contributeTo}</h4>
-                    <h1 className={classes.title}>{crowdloanHelper.title} {textsCap.crowdloan}</h1>
-                </div>
-            ),
+            content: <FormTitle rxInputs={rxInputs} />,
             type: 'html',
         },
         {
@@ -562,7 +465,7 @@ export const getRxInputs = (classes) => {
         },
         {
             disabled: true,
-            hidden: true,
+            // hidden: true,
             InputProps: tokenInputProps(),
             label: textsCap.amtContdLabel,
             name: inputNames.amountContributed,
@@ -606,12 +509,12 @@ export const getRxInputs = (classes) => {
             onChange: handlePledgeChange,
             type: 'slider',
             value: 0,
-            valueLabelFormat: value => Number(value.toFixed(2))
+            valueLabelFormat: value => Number(value.toFixed(2)),
         },
         {
             disabled: true,
             hidden: true, // visible only when total contribution amount is greater than 5
-            InputProps: tokenInputProps('Kapex'),
+            InputProps: tokenInputProps('KAPEX'),
             label: textsCap.amtRewardsLabel,
             labelDetails: (
                 <a
@@ -937,6 +840,6 @@ const identityOptionsModifier = (rxInputs, classes) => identities => {
             }
         })
 
-    checkExtenstion(rxInputs)
+    checkExtenstion(rxInputs, classes)
     return options
 }
