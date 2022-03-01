@@ -29,7 +29,7 @@ const [texts, textsCap] = translated({
     identityAccessGuide2: 'click on the options icon next to your desired identity',
     identityAccessGuide3: 'select "Allow use on any chain" from the dropdown list',
     notRecommended: 'not recommended',
-    warnMobile: '',
+    warnMobile: 'PolkadotJS extension is not available on mobile browsers! It is recomended to use a computer browser with PolkadotJS extension enabled.',
     warnSafari1: 'Please note that using Safari browser is not recommended due the lack of a PolkadotJS Extension.',
     warnSafari2: 'Consider using one of the following supported browsers:',
     warnSafari3: 'Chrome, Firefox or any Chromium based browser',
@@ -134,8 +134,13 @@ export const checkExtenstion = deferred((rxInputs, classes) => {
                 title: textsCap.identityAccessGuide,
             },
         ]
-        error = !isSupported && isMobile
-            ? textsCap.warnMobile
+        error = isMobile
+            ? (
+                <>
+                    {textsCap.warnMobile}
+                    <br />
+                </>
+            )
             : (
                 <>
                     {textsCap.warnInjectionFailed}

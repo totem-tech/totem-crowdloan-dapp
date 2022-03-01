@@ -150,7 +150,9 @@ export default function CrowdloanForm(props) {
                 text: (
                     <div>
                         {textsCap.errAccount1 + ' '}
-                        <a href={urlCreate}>{textsCap.errAccount2}</a>
+                        <a className={classes.link} href={urlCreate}>
+                            {textsCap.errAccount2}
+                        </a>
 
                         <br />
                         <br />
@@ -162,7 +164,9 @@ export default function CrowdloanForm(props) {
 
             // check if user has created a backup of their account
             if (!error) {
-                const all = identityHelper.getAll()
+                const all = identityHelper
+                    .getAll()
+                    .filter(x => !!x.uri)
                 const allBackedUp = all.every(x =>
                     !x.uri // consider extension identities as backed up
                     || !!x.fileBackupTS
@@ -176,7 +180,9 @@ export default function CrowdloanForm(props) {
                     status: STATUS.warning,
                     text: (
                         <div>
-                            <a href={backupUrl}>{textsCap.errBackup}</a>
+                            <a className={classes.link} href={backupUrl}>
+                                {textsCap.errBackup}
+                            </a>
                         </div>
                     )
                 }
