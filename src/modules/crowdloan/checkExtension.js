@@ -55,7 +55,10 @@ export const checkExtenstion = deferred((rxInputs, classes) => {
         return rxInputs.next(rxInputs.value)
     }
 
-    const isMobile = checkDevice(DEVICE_TYPE.mobile)
+    const isMobile = checkDevice([
+        DEVICE_TYPE.mobile,
+        DEVICE_TYPE.tablet,
+    ])
     const isSafari = navigator.userAgent.includes('Safari')
         && navigator.vendor.includes('Apple Computer')
     const isChrome = navigator.userAgent.includes('Chrome')
