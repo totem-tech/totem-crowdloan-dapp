@@ -75,13 +75,13 @@ export const useBalance = (address, asString = true, blockchainHelper = bcHelper
                     handleResult,
                 )
         }
-        if (address) fetch().catch(err =>
+        if (address) fetch().catch(err => {
             setBalance([
                 0,
                 false,
                 `${err}`.replace('Error: ', ''),
             ])
-        )
+        })
         return () => {
             mounted = false
             unsubscribe(sub)

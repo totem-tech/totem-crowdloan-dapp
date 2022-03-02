@@ -29,6 +29,10 @@ ReactDOM.render(
 if (!showComingSoon) {
     const connectBlockchain = async () => {
         const { api } = await blockchainHelper.getConnection()
+            .catch(err => {
+                console.log({ err })
+                return Promise.reject(err)
+            })
         window.api = api
     }
     if (appEnv !== 'production') {

@@ -121,9 +121,11 @@ export default function CrowdloanForm(props) {
         },
         showLoader: true,
     })
-    const rxInputs = useState(() => getRxInputs(classes))[0]
+    const [rxInputs] = useState(() => getRxInputs(classes))
     let { error, loading, status = {} } = useCrowdloanStatus(crowdloanHelper, softCap)
     const [inputs] = useRxSubject(rxInputs)
+    const statusIn = findInput(inputNames.crowdloanStatus, inputs) || {}
+    const { active, isValid } = statusIn.value || {}
 
     useEffect(() => {
         if (!crowdloanHelper.parachainId) {
@@ -233,8 +235,8 @@ export default function CrowdloanForm(props) {
             )
             // trigger an update on the pledge input which will update the calculated rewards
             pledgeIn?.onChange(
-                getValues(inputs),
-                inputs,
+                getValues(rxInputs.value),
+                rxInputs.value,
             )
             statusIn.value = status
             rxInputs.next([...rxInputs.value])
@@ -250,9 +252,6 @@ export default function CrowdloanForm(props) {
         }
         : state.error
     if (error) return <Message {...error} />
-
-    const statusIn = findInput(inputNames.crowdloanStatus, inputs) || {}
-    const { active, isValid } = statusIn.value || {}
 
     return (
         <FormBuilder {...{
