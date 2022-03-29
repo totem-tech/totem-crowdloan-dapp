@@ -1,14 +1,13 @@
 import React, { useState } from 'react'
 import { ExpandMore, MoreVert, Settings } from '@mui/icons-material'
-import {
-    Accordion,
-    AccordionDetails,
-    AccordionSummary,
-} from '@mui/material'
+import { Accordion, AccordionDetails, AccordionSummary } from '@mui/material'
+import { cryptoWaitReady } from '@polkadot/util-crypto'
+import { crowdloanHelper } from '../blockchain'
 import { findInput } from '../../components/form/InputCriteriaHint'
 import { STATUS } from '../../components/Message'
 import { checkDevice, DEVICE_TYPE } from '../../utils/checkDevice'
 import { translated } from '../../utils/languageHelper'
+import { subjectAsPromise } from '../../utils/reactHelper'
 import identityHelper from '../../utils/substrate/identityHelper'
 import { deferred } from '../../utils/utils'
 import { inputNames } from './FormTitle'
@@ -36,6 +35,18 @@ const [texts, textsCap] = translated({
     warnInjectionFailed: 'could not access PolkadotJS Extension! Please install and enable the browser extension from here:',
 }, true)
 
+// Enable polkadotJS extension
+export const enableExtionsion = async () => {
+    // wait until identity helper initiated
+    // await subjectAsPromise(
+    //     identityHelper.rxSelected,
+    //     selected => !!selected && selected,
+    // )
+
+    await cryptoWaitReady()
+    return await identityHelper.enableExtionsion(crowdloanHelper.title)
+}
+
 /**
  * @name    checkExtenstion
  * @summary Check if extension is enabled and any indentities were injected
@@ -55,10 +66,7 @@ export const checkExtenstion = deferred((rxInputs, classes) => {
         return rxInputs.next(rxInputs.value)
     }
 
-    const isMobile = checkDevice([
-        DEVICE_TYPE.mobile,
-        DEVICE_TYPE.tablet,
-    ])
+    const isMobile = checkDevice([DEVICE_TYPE.mobile, DEVICE_TYPE.tablet])
     const isSafari = navigator.userAgent.includes('Safari')
         && navigator.vendor.includes('Apple Computer')
     const isChrome = navigator.userAgent.includes('Chrome')

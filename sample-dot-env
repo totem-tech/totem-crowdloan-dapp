@@ -11,7 +11,7 @@ REACT_APP_COMING_SOON=true
 # Auto disconnect delay in milliseconds for blockchain node.
 # If positive integer,  blockchain will auto disconnect after making a query with the given delay duration.
 # Regardless of auto-disconnect settings, connection will be established before making a query or sending a transaction.
-REACT_APP_DISCONNECT_DELAY_MS=0
+REACT_APP_NODE_DISCONNECT_DELAY_MS=0
 
 # Title of the blockchain network
 REACT_APP_CHAIN_TITLE=Polkadot Network

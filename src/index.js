@@ -14,7 +14,6 @@ const appEnv = process.env.REACT_APP_ENV
 const nodeEnv = process.env.NODE_ENV
 console.log(`${appEnv} in ${nodeEnv} mode`)
 
-
 ReactDOM.render(
     (
         <AppContainer>

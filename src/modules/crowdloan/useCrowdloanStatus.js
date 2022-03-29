@@ -47,7 +47,9 @@ export default function useCrowdloanStatus(crowdloanHelper, softCap) {
             if (!allReceived) return
 
             const _status = {
-                active: isValid && currentBlock < endBlock && amountRaised < hardCap,
+                active: isValid
+                    && currentBlock < endBlock
+                    && amountRaised < hardCap,
                 amountRaised,
                 hardCap,
                 hardCapReached: amountRaised >= hardCap,

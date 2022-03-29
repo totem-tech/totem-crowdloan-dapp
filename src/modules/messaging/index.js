@@ -15,9 +15,7 @@ export default async function _getClient() {
     if (!SERVER_URL) throw new Error('Missing messaging server websocket URL')
 
     if (!client) {
-        console.log('Connecting to Totem Messaging service', SERVER_URL)
         client = getClient(SERVER_URL)
-        client.onConnect(() => console.log('Connected to Totem Messaging service'))
         client.onError(console.warn)
     }
 

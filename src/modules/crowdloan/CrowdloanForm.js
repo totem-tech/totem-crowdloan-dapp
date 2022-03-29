@@ -1,17 +1,12 @@
 import React, { useEffect, useState } from 'react'
-import { BehaviorSubject } from "rxjs"
-import { Settings } from '@mui/icons-material'
+import { BehaviorSubject } from 'rxjs'
 import {
-    Box,
     Button,
     CircularProgress,
     colors,
     InputAdornment,
-    Step,
-    StepLabel,
-    Stepper,
 } from '@mui/material'
-import FormBuilder from "../../components/form/FormBuilder"
+import FormBuilder from '../../components/form/FormBuilder'
 import { findInput, getValues } from '../../components/form/InputCriteriaHint'
 import Message, { STATUS } from '../../components/Message'
 import modalService from '../../components/modal/modalService'
@@ -30,7 +25,6 @@ import {
 } from '../../utils/utils'
 import blockchainHelper, { crowdloanHelper, softCap } from '../blockchain/'
 import Balance from '../blockchain/Balance'
-import enableExtionsion from '../blockchain/enableExtension'
 import getClient from '../messaging/'
 import useCrowdloanStatus from './useCrowdloanStatus'
 import useStyles from './useStyles'
@@ -38,7 +32,7 @@ import Contributed from './Contributed'
 import { shorten } from '../../utils/number'
 import FormTitle from './FormTitle'
 import { useRxSubject } from '../../utils/reactHelper'
-import { checkExtenstion } from './checkExtension'
+import { checkExtenstion, enableExtionsion } from './checkExtension'
 
 const PLEDGE_PERCENTAGE = 0.1 // 10%
 const [texts, textsCap] = translated({
@@ -122,8 +116,8 @@ export default function CrowdloanForm(props) {
         showLoader: true,
     })
     const [rxInputs] = useState(() => getRxInputs(classes))
-    let { error, loading, status = {} } = useCrowdloanStatus(crowdloanHelper, softCap)
     const [inputs] = useRxSubject(rxInputs)
+    let { error, loading, status = {} } = useCrowdloanStatus(crowdloanHelper, softCap)
     const statusIn = findInput(inputNames.crowdloanStatus, inputs) || {}
     const { active, isValid } = statusIn.value || {}
 
@@ -192,11 +186,12 @@ export default function CrowdloanForm(props) {
 
             if (!error) {
                 handleError(getClient())
-                handleError(
-                    blockchainHelper
-                        .getConnection()
-                        .catch(customError(textsCap.errBlockchainConnection))
-                )
+                // handleError(
+                blockchainHelper
+                    .getConnection()
+                    .catch(() => { })
+                // .catch(customError(textsCap.errBlockchainConnection))
+                // )
             }
 
             return {
@@ -216,7 +211,12 @@ export default function CrowdloanForm(props) {
 
                         if (state.error) return
 
-                        handleError(enableExtionsion(), null, setState)
+                        // attempt to enable browser extension(s) and show error message if any
+                        handleError(
+                            enableExtionsion(),
+                            null,
+                            setState,
+                        )
                     },
                     'initialize'
                 )
@@ -224,7 +224,7 @@ export default function CrowdloanForm(props) {
     }, [])
 
     useEffect(() => {
-        if (!loading) {
+        if (!loading && !error) {
             const statusIn = findInput(
                 inputNames.crowdloanStatus,
                 rxInputs.value,
