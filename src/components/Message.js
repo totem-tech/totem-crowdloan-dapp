@@ -72,9 +72,9 @@ export default function Message({ content, header, icon, id, status, style, text
                         color: color[900],
                         display: 'inline-block',
                         padding: !!header
-                            ? '3px 15px 7px'
+                            ? '3px 10px 7px'
                             : '7px 15px',
-                        maxWidth: !!icon && 'calc( 100% - 83px )' || '',
+                        maxWidth: !!icon && 'calc(100% - 64px)' || '',
                     }
                 }}>
                     {header && (

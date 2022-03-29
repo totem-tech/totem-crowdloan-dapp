@@ -15,7 +15,6 @@ import { shorten } from '../../utils/number'
 import useStyles from './useStyles'
 import { useRxSubject } from '../../utils/reactHelper'
 import { findInput } from '../../components/form/InputCriteriaHint'
-import { makeStyles } from '@mui/styles'
 
 const [texts, textsCap] = translated({
     amountRaised: 'amount raised',
@@ -23,6 +22,8 @@ const [texts, textsCap] = translated({
     crowdloan: 'crowdloan',
     errCrowdloanEnded: 'crowdloan has ended',
     errCrowdloanEndedDetails: 'you can no longer make new contributions',
+    errCrowdloanInvalid: 'crowdloan is coming soon',
+    errCrowdloanInvalidDetails: 'please join our social media channels for announcements',
     step10PBonus: '10% bonus',
     stepHardCap: 'target cap',
     stepStarted: 'started',
@@ -70,7 +71,7 @@ function CrowdloanStatusSteps({ status }) {
             ),
         },
         {
-            completed: !active,
+            completed: hardCapReached,
             label: textsCap.stepHardCap,
             labelDetails: (
                 <div>
@@ -86,10 +87,14 @@ function CrowdloanStatusSteps({ status }) {
         <>
             {!active && (
                 <Message {...{
-                    header: textsCap.errCrowdloanEnded,
+                    header: isValid
+                        ? textsCap.errCrowdloanEnded
+                        : textsCap.errCrowdloanInvalid,
                     icon: true,
                     status: STATUS.warning,
-                    text: textsCap.errCrowdloanEndedDetails,
+                    text: isValid
+                        ? textsCap.errCrowdloanEndedDetails
+                        : textsCap.errCrowdloanInvalidDetails,
                 }} />
             )}
 
@@ -102,28 +107,30 @@ function CrowdloanStatusSteps({ status }) {
                     </center>
                 </div>
             )}
-            <Stepper alternativeLabel style={{ paddingTop: 15 }}>
-                {steps.map((x, i) => (
-                    <Step {...{
-                        completed: x.completed,
-                        key: i,
-                        title: x.title,
-                    }}>
-                        <StepLabel StepIconProps={{
-                            style: {
-                                color: x.completed && 'deeppink' || '',
-                            }
+            {isValid && (
+                <Stepper alternativeLabel style={{ paddingTop: 15 }}>
+                    {steps.map((x, i) => (
+                        <Step {...{
+                            completed: x.completed,
+                            key: i,
+                            title: x.title,
                         }}>
-                            {x.label}
-                            <div>
-                                <small>
-                                    {x.labelDetails}
-                                </small>
-                            </div>
-                        </StepLabel>
-                    </Step>
-                ))}
-            </Stepper>
+                            <StepLabel StepIconProps={{
+                                style: {
+                                    color: x.completed && 'deeppink' || '',
+                                }
+                            }}>
+                                {x.label}
+                                <div>
+                                    <small>
+                                        {x.labelDetails}
+                                    </small>
+                                </div>
+                            </StepLabel>
+                        </Step>
+                    ))}
+                </Stepper>
+            )}
         </>
     )
 }

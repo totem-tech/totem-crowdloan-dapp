@@ -33,7 +33,7 @@ export default function useCrowdloanStatus(crowdloanHelper, softCap) {
                 amountRaised = raised
                 endBlock = end
                 hardCap = cap
-                isValid = cap > 0 && end > 0
+                isValid = result !== null && cap > 0 && end > 0
                 updateStatus()
             })
         }
@@ -52,10 +52,10 @@ export default function useCrowdloanStatus(crowdloanHelper, softCap) {
                     && amountRaised < hardCap,
                 amountRaised,
                 hardCap,
-                hardCapReached: amountRaised >= hardCap,
+                hardCapReached: isValid && amountRaised >= hardCap,
                 isValid,
                 softCap,
-                softCapReached: isValidNumber(softCap) && amountRaised >= softCap,
+                softCapReached: isValid && isValidNumber(softCap) && amountRaised >= softCap,
             }
 
             if (!mounted || JSON.stringify(status) === JSON.stringify(_status)) return

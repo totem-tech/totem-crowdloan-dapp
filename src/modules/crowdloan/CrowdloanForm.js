@@ -16,7 +16,6 @@ import PromisE from '../../utils/PromisE'
 import identityHelper from '../../utils/substrate/identityHelper'
 import {
     arrSort,
-    deferred,
     isError,
     isFn,
     objClean,
@@ -24,12 +23,11 @@ import {
     textEllipsis,
 } from '../../utils/utils'
 import blockchainHelper, { crowdloanHelper, softCap } from '../blockchain/'
-import Balance from '../blockchain/Balance'
+import Balance, { useBalance } from '../blockchain/Balance'
 import getClient from '../messaging/'
 import useCrowdloanStatus from './useCrowdloanStatus'
 import useStyles from './useStyles'
 import Contributed from './Contributed'
-import { shorten } from '../../utils/number'
 import FormTitle from './FormTitle'
 import { useRxSubject } from '../../utils/reactHelper'
 import { checkExtenstion, enableExtionsion } from './checkExtension'
@@ -44,10 +42,6 @@ const [texts, textsCap] = translated({
     amtRewardsLabelDetails: 'learn more about rewards distribution',
     amtToContLabel: 'amount you would like to contribute now',
     amtToContLabelDetails: 'you can always return to contribute as many times as you like before the end of the crowdloan',
-    step10PBonus: '10% bonus',
-    stepHardCap: 'hard cap',
-    stepStarted: 'started',
-    stepSoftCap: 'soft cap',
     close: 'close',
     confirm: 'confirm',
     contributed: 'contributed',
@@ -115,6 +109,13 @@ export default function CrowdloanForm(props) {
         },
         showLoader: true,
     })
+    // const addresses = useRxSubject(
+    //     identityHelper.rxIdentities,
+    //     map => Array
+    //         .from(map)
+    //         .map(([address]) => address),
+    // )
+    // const balances = useBalance(addresses, 'shorten', blockchainHelper)
     const [rxInputs] = useState(() => getRxInputs(classes))
     const [inputs] = useRxSubject(rxInputs)
     let { error, loading, status = {} } = useCrowdloanStatus(crowdloanHelper, softCap)
@@ -781,6 +782,7 @@ const handleSubmit = (rxInputs, setState) => async (_, values) => {
 }
 
 
+const balances = new Map()
 /**
  * @name    identityOptionsModifier
  * @param   {Object} rxInputs 
@@ -817,6 +819,7 @@ const identityOptionsModifier = (rxInputs, classes) => identities => {
                     },
                 }
 
+            if (!balances.get(address)) balances.set(address, <Balance address={address} />)
             const text = (
                 <div style={{ width: '100%' }}>
                     <div style={{ float: 'left' }}>
@@ -827,7 +830,7 @@ const identityOptionsModifier = (rxInputs, classes) => identities => {
                         color: colors.grey[500],
                         float: 'right',
                     }}>
-                        <Balance address={address} />
+                        {balances.get(address)}
                         <Contributed {...{
                             address,
                             className: classes.contributed,
