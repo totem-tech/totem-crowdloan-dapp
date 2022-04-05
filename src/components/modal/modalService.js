@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { Component } from 'react'
 import { BehaviorSubject } from 'rxjs'
 import { v1 } from 'uuid'
 import { toProps } from '../reactUtils'
@@ -103,7 +103,7 @@ export class ModalService {
                 isFn(confirmBtnProps?.onClick) && confirmBtnProps.onClick(...args)
             },
         }
-        return this.set({
+        return this.show({
             ...confirmProps,
             actionButtons: [
                 ...actionButtons,
@@ -130,7 +130,7 @@ export class ModalService {
      * 
      * @param   {String} id
      */
-    delete = id => this.set(null, id)
+    delete = id => this.show(null, id)
 
     info = (confirmProps = {}, id) => {
         confirmProps.confirmButton = null
@@ -143,16 +143,16 @@ export class ModalService {
      * @name    set
      * @summary add or update a modal
      * 
-     * @param   {Object|null}   modalProps custom modal or props to be supplied to the MUI Dialog component
-     * @param   {String}        id           (optional) modal ID.
-     *                                       Default: random  UUID V1
+     * @param   {Object|null}   modalProps  custom modal or props to be supplied to the MUI Dialog component
+     * @param   {String}        id          (optional) modal ID.
+     *                                      Default: random  UUID V1
+     * @param   {*}             Component   Default: `SimpleModal`
      * 
-     * @param   {String} id 
+     * @returns {String} id 
      */
-    set = (modalProps, id = v1(), Component = SimpleModal) => {
+    show = (modalProps, id = v1(), Component = SimpleModal) => {
         const modals = this.rxModals.value
         if (isObj(modalProps)) {
-
             const onClose = modalProps?.onClose
             modalProps.onClose = (...args) => {
                 this.delete(id)
@@ -173,6 +173,26 @@ export class ModalService {
         )
         return id
     }
+
+    /**
+     * @name    showCompact
+     * @summary show a compact modal. Hides the close button and removes content padding.
+     * 
+     * @param   {Object}    modalProps 
+     * @param   {String}    id 
+     * @param   {*}         Component 
+     * 
+     * @returns {String}    id
+     */
+    showCompact = (modalProps, id, Component) => this.show(
+        {
+            contentProps: { style: { padding: 0 } },
+            closeButton: null,
+            ...modalProps,
+        },
+        id,
+        Component
+    )
 }
 
 const modalService = new ModalService()

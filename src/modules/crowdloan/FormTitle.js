@@ -64,7 +64,7 @@ function CrowdloanStatusSteps({ status }) {
             label: textsCap.stepSoftCap,
             labelDetails: (
                 <div>
-                    {shorten(softCap, 0)} {ticker}
+                    {shorten(softCap, 2)} {ticker}
                     <br />
                     <i>+{textsCap.step10PBonus}</i>
                 </div>
@@ -75,7 +75,7 @@ function CrowdloanStatusSteps({ status }) {
             label: textsCap.stepHardCap,
             labelDetails: (
                 <div>
-                    {shorten(hardCap, 0)} {ticker}
+                    {shorten(hardCap, 2)} {ticker}
                     <br />
                     <i>+{textsCap.step10PBonus}</i>
                 </div>
@@ -102,7 +102,7 @@ function CrowdloanStatusSteps({ status }) {
                 <div className={classes.amountRaised}>
                     <center>
                         <strong>
-                            {textsCap.amountRaised}: {shorten(amountRaised)} {ticker}
+                            {textsCap.amountRaised}: {shorten(amountRaised, 2)} {ticker}
                         </strong>
                     </center>
                 </div>
