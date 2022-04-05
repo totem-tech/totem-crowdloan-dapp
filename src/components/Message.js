@@ -30,6 +30,18 @@ export const STATUS_ICON = {
     success: <CheckCircle color='success' style={iconStyle} />,
     warning: <Error color='warning' style={iconStyle} />,
 }
+/**
+ * @name    Message
+ * 
+ * @param   {Object} props
+ * @param   {*}      props.content
+ * @param   {*}      props.header
+ * @param   {*}      props.icon
+ * @param   {*}      props.id
+ * @param   {*}      props.status
+ * @param   {*}      props.style
+ * @param   {*}      props.text
+ */
 export default function Message({ content, header, icon, id, status, style, text }) {
     status = STATUS[status] || STATUS.info
     const color = STATUS_COLOR[status] || STATUS_COLOR.info
@@ -74,7 +86,7 @@ export default function Message({ content, header, icon, id, status, style, text
                         padding: !!header
                             ? '3px 15px 7px'
                             : '7px 15px',
-                        maxWidth: !!icon && 'calc( 100% - 83px )' || '',
+                        maxWidth: !!icon && 'calc( 100% - 43px )' || '',
                     }
                 }}>
                     {header && (
@@ -86,6 +98,6 @@ export default function Message({ content, header, icon, id, status, style, text
                     )}
                     {text}
                 </Typography>
-            </Box >
+            </Box>
         )
 }

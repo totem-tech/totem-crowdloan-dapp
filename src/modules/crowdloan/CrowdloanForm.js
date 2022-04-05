@@ -29,10 +29,10 @@ import getClient from '../messaging/'
 import useCrowdloanStatus from './useCrowdloanStatus'
 import useStyles from './useStyles'
 import Contributed from './Contributed'
-import { shorten } from '../../utils/number'
 import FormTitle from './FormTitle'
 import { useRxSubject } from '../../utils/reactHelper'
 import { checkExtenstion, enableExtionsion } from './checkExtension'
+import { ContentCopy, OpenInNew } from '@mui/icons-material'
 
 const PLEDGE_PERCENTAGE = 0.1 // 10%
 const [texts, textsCap] = translated({
@@ -50,6 +50,7 @@ const [texts, textsCap] = translated({
     stepSoftCap: 'soft cap',
     close: 'close',
     confirm: 'confirm',
+    connectingBlockchain: 'connecting to blockchain',
     contributed: 'contributed',
     contributeTo: 'contribute to',
     copiedRefLink: 'referral link is copied to the clipboard',
@@ -80,8 +81,8 @@ const [texts, textsCap] = translated({
     signatureHeader: 'sign message',
     signatureMsg: 'you are about to contribute to Totem KAPEX Parachain Crowdloan',
     signatureMsg2: 'please click continue to approve and sign this transaction.',
-    signTxMsg: 'please sign the transaction on the extension pop up',
-    signDataMsg: 'please sign the message on the extension pop up',
+    signTxMsg: 'please approve to sign the transaction using your extension identity',
+    signDataMsg: 'please approve to sign a message using your extension identity',
     submit: 'contribute',
     transactionCompleted: 'transaction completed successfully.',
     txSuccessMsg: 'thank you for contributing!',
@@ -89,6 +90,7 @@ const [texts, textsCap] = translated({
     transactionMsg: 'Please click Contribute to approve your contribution transaction for the Totem KAPEX Parachain Crowdloan on the Polkadot Relay Chain. Once this transaction is completed your funds will be locked for the duration of the crowdloan (96 weeks). This action is irreversible. Please do not close window until you see a transaction confirmation message.',
     txInProgress: 'transaction in-progress',
     txStatus: 'transaction status',
+    viewTransaction: 'view transaction'
 }, true)
 
 const logos = {
@@ -120,6 +122,11 @@ export default function CrowdloanForm(props) {
     let { error, loading, status = {} } = useCrowdloanStatus(crowdloanHelper, softCap)
     const statusIn = findInput(inputNames.crowdloanStatus, inputs) || {}
     const { active, isValid } = statusIn.value || {}
+    const initModalId = 'init'
+
+    useEffect(() => {
+        if (!!statusIn.value) modalService.delete(initModalId)
+    }, [statusIn.value])
 
     useEffect(() => {
         if (!crowdloanHelper.parachainId) {
@@ -185,13 +192,24 @@ export default function CrowdloanForm(props) {
             }
 
             if (!error) {
-                handleError(getClient())
-                // handleError(
-                blockchainHelper
-                    .getConnection()
-                    .catch(() => { })
-                // .catch(customError(textsCap.errBlockchainConnection))
-                // )
+                modalService.showCompact({
+                    content: (
+                        <Message {...{
+                            content: textsCap.connectingBlockchain,
+                            icon: true,
+                            style: { margin: 0 },
+                            status: STATUS.loading,
+                        }} />
+                    )
+                }, initModalId)
+                handleError(getClient(), null, initModalId)
+                handleError(
+                    blockchainHelper
+                        .getConnection()
+                        .catch(customError(textsCap.errBlockchainConnection)),
+                    null,
+                    initModalId,
+                )
             }
 
             return {
@@ -551,11 +569,15 @@ const handleCopyReferralUrl = event => {
     const { id } = getUser()
     const url = `${window.location.href}?ref=${id}`
     window.navigator.clipboard.writeText(url)
-    modalService.confirm({
-        closeButton: textsCap.close,
-        confirmButton: null,
-        content: textsCap.copiedRefLink,
-    })
+    const modalId = 'referral-link'
+    modalService.showCompact({
+        content: (
+            <div style={{ padding: 10 }}>
+                <ContentCopy /> {textsCap.copiedRefLink}
+            </div>
+        ),
+    }, modalId)
+    setTimeout(() => modalService.delete(modalId), 2000)
 }
 
 /**
@@ -588,10 +610,21 @@ const handleError = (func, onFinally, modalId) => {
                 }
                 setState({ ...state })
             } else {
-                modalService.info({
-                    content,
-                    subtitle: err?.subtitle,
-                    title: err?.title,
+                modalService.showCompact({
+                    content: (
+                        <Message {...{
+                            content: (
+                                <>
+                                    {err?.subtitle && <small>{err?.subtitle}</small>}
+                                    {err.message}
+                                </>
+                            ),
+                            header: err?.title,
+                            icon: true,
+                            status: STATUS.error,
+                            style: { margin: 0 },
+                        }} />
+                    ),
                 }, modalId)
             }
         } finally {
@@ -638,39 +671,28 @@ const handleSubmit = (rxInputs, setState) => async (_, values) => {
     const state = { submitDisabled: true }
     let unsubscribe
     setState(state)
+    const showMessage = props => modalService.showCompact({
+        content: (
+            <Message {...{
+                style: { margin: 0 },
+                icon: true,
+                ...props,
+            }} />
+        ),
+    }, modalId)
+
     const handleConfirm = async (accepted) => {
         if (!accepted) return
-        const setExtensionMessage = (text) => {
-            if (!signer) return
-            // user needs to sign both the message and transaction using the extension
-            setState({
-                message: {
-                    id: messageId,
-                    status: STATUS.loading,
-                    text,
-                }
-            })
-            scrollToMsg(100)
-        }
 
         // get transaction signer from PolkadotJS extension if identity was injected
         const signer = !identityObj.uri && await identityHelper
             .extension
             .getSigner(identity)
-        const messageId = 'submit-message'
-        const scrollToMsg = (delay = 0) => setTimeout(() =>
-            document
-                .querySelector('#root > div')
-                ?.scrollTo(
-                    0,
-                    document
-                        ?.getElementById(messageId)
-                        ?.offsetTop
-                ),
-            delay
-        )
 
-        setExtensionMessage(textsCap.signDataMsg)
+        signer && showMessage({
+            status: STATUS.loading,
+            text: textsCap.signDataMsg,
+        })
         const signature = await identityHelper
             .signature(identity, contribution)
         // pre-validate
@@ -688,18 +710,18 @@ const handleSubmit = (rxInputs, setState) => async (_, values) => {
         // keep track of and display transaction status
         const rxUpdater = new BehaviorSubject({ status: { type: 'Initiating' } })
         unsubscribe = rxUpdater.subscribe(result => {
-            state.message = {
+            showMessage({
                 header: textsCap.txInProgress,
                 icon: true,
-                id: messageId,
                 status: STATUS.loading,
                 text: `${textsCap.txStatus}: ${result?.status?.type || ''}`
-            }
-            setState(state)
+            })
         })
-        scrollToMsg(100)
 
-        setExtensionMessage(textsCap.signTxMsg)
+        signer && showMessage({
+            status: STATUS.loading,
+            text: textsCap.signTxMsg,
+        })
         // execute the contribution transaction
         const [blockHash] = await blockchainHelper
             .signAndSend(
@@ -725,34 +747,41 @@ const handleSubmit = (rxInputs, setState) => async (_, values) => {
         await identityIn.onChange(values, rxInputs.value, {})
         rxInputs.next([...rxInputs.value])
 
+        const explorerUrl = `https://polkadot.js.org/apps/?rpc=${blockchainHelper.nodeUrls[0]}#/explorer/query/${blockHash}`
         // transaction was successful
         // delay to prevent message being overriden by status message
         setTimeout(() => {
-            setState({
-                message: {
-                    header: textsCap.transactionCompleted,
-                    id: messageId,
-                    icon: true,
-                    status: STATUS.success,
-                    text: (
-                        <div>
-                            {textsCap.txSuccessMsg} {textsCap.txSuccessMsg2}
-                            <br />
-                            <br />
-                            {textsCap.invite1} {textsCap.invite2}
-                            <br />
-                            <Button
-                                color='success'
-                                onClick={handleCopyReferralUrl}
-                                variant='outlined'
-                            >
-                                {textsCap.copyRefLink}
-                            </Button>
-                        </div>
-                    )
-                }
+            showMessage({
+                header: textsCap.transactionCompleted,
+                icon: true,
+                status: STATUS.success,
+                text: (
+                    <div>
+                        {textsCap.txSuccessMsg} {textsCap.txSuccessMsg2}
+                        <br />
+                        <Button {...{
+                            color: 'success',
+                            Component: 'a',
+                            href: explorerUrl,
+                            target: '_blank',
+                            variant: 'outlined',
+                        }}>
+                            <OpenInNew /> {textsCap.viewTransaction}
+                        </Button>
+                        <br />
+                        <br />
+                        {textsCap.invite1} {textsCap.invite2}
+                        <br />
+                        <Button {...{
+                            color: 'success',
+                            onClick: handleCopyReferralUrl,
+                            variant: 'outlined',
+                        }}>
+                            <ContentCopy /> {textsCap.copyRefLink}
+                        </Button>
+                    </div>
+                )
             })
-            scrollToMsg(100)
         }, 300)
     }
 
@@ -774,7 +803,7 @@ const handleSubmit = (rxInputs, setState) => async (_, values) => {
                 state.submitDisabled = false
                 setState(state)
             },
-            setState,
+            modalId,
         ),
         title: textsCap.signatureHeader,
     }, modalId)
@@ -848,3 +877,16 @@ const identityOptionsModifier = (rxInputs, classes) => identities => {
     checkExtenstion(rxInputs, classes)
     return options
 }
+
+const showCompactModal = (props, modalId) => modalService.show({
+    // content: (
+    //     <Message {...{
+    //         style: { margin: 0 },
+    //         icon: true,
+    //         ...msgProps,
+    //     }} />
+    // ),
+    contentProps: { style: { padding: 0 } },
+    closeButton: null,
+    ...props,
+}, modalId)

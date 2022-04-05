@@ -20,6 +20,7 @@ export default function SimpleModal(props) {
         actionButtons = [],
         closeButton,
         content,
+        contentProps = {},
         ignoredAttrs,
         onClose,
         open: _open,
@@ -90,8 +91,8 @@ export default function SimpleModal(props) {
                 </DialogTitle>
             )}
             {content && (
-                <DialogContent >
-                    <DialogContentText>
+                <DialogContent {...contentProps}>
+                    <DialogContentText component='div'>
                         {content}
                     </DialogContentText>
                 </DialogContent>
@@ -154,6 +155,7 @@ SimpleModal.defaultProps = {
         'actionButtons',
         'closeButton',
         'content',
+        'contentProps',
         'ignoredAttrs',
         'subtitle',
         'subtitle',
