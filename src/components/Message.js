@@ -66,10 +66,10 @@ export default function Message({ content, header, icon, id, status, style, text
                     maxWidth: '100%',
                     minHeight: 60,
                     overflowX: 'auto',
-                    padding: 7,
+                    padding: 10,
                     whiteSpace: 'auto',
                     ...style,
-                }
+                },
             }}>
                 <Typography {...{
                     component: 'div',
@@ -78,7 +78,7 @@ export default function Message({ content, header, icon, id, status, style, text
                         display: 'inline-block',
                         marginLeft: !!icon ? 50 : 0,
                         padding: !!header
-                            ? '0 0 7px 7px'
+                            ? '0 0 0 7px'
                             : 7,
                     }
                 }}>
@@ -89,7 +89,7 @@ export default function Message({ content, header, icon, id, status, style, text
                     <div style={{
                         left: 10,
                         position: 'absolute',
-                        top: 5,
+                        top: 7,
                     }}>
                         {icon}
                     </div>

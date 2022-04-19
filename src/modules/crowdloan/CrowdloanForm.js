@@ -613,7 +613,10 @@ const handleError = (func, onFinally, modalId) => {
                             header: err?.title,
                             icon: true,
                             status: STATUS.error,
-                            style: { margin: 0 },
+                            style: {
+                                margin: 0,
+                                maxWidth: 418,
+                            },
                         }} />
                     ),
                 }, modalId)
@@ -665,7 +668,10 @@ const handleSubmit = (rxInputs, setState) => async (_, values) => {
     const showMessage = props => modalService.showCompact({
         content: (
             <Message {...{
-                style: { margin: 0 },
+                style: {
+                    margin: 0,
+                    maxWidth: 418,
+                },
                 icon: true,
                 ...props,
             }} />
