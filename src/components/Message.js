@@ -72,7 +72,7 @@ export default function Message({ content, header, icon, id, status, style, text
                 {!!icon && (
                     <div style={{
                         display: 'inline-block',
-                        paddingLeft: 5,
+                        // paddingLeft: 5,
                         verticalAlign: 'top',
                     }}>
                         {icon}
@@ -84,9 +84,9 @@ export default function Message({ content, header, icon, id, status, style, text
                         color: color[900],
                         display: 'inline-block',
                         padding: !!header
-                            ? '3px 10px 7px'
+                            ? '0 0 0 10px'
                             : '7px 15px',
-                        maxWidth: !!icon && 'calc( 100% - 43px )' || '',
+                        maxWidth: !!icon && 'calc( 100% - 58px )' || '',
                     }
                 }}>
                     {header && (

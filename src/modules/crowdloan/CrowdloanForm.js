@@ -37,6 +37,7 @@ const PLEDGE_PERCENTAGE = 0.1 // 10%
 const [texts, textsCap] = translated({
     amtContdLabel: 'amount already contributed',
     amtPlgLabel: 'amount you would like to pledge',
+    amtPlgLabel2: 'amount you pledged',
     amtPlgLabelDetails: 'You can pledge upto a maximum 10% of your crowdloan contribution.',
     amtPlgLabelDetails2: 'learn more',
     amtRewardsLabel: 'estimated rewards',
@@ -112,13 +113,6 @@ export default function CrowdloanForm(props) {
         },
         showLoader: true,
     })
-    // const addresses = useRxSubject(
-    //     identityHelper.rxIdentities,
-    //     map => Array
-    //         .from(map)
-    //         .map(([address]) => address),
-    // )
-    // const balances = useBalance(addresses, 'shorten', blockchainHelper)
     const [rxInputs] = useState(() => getRxInputs(classes))
     const [inputs] = useRxSubject(rxInputs)
     let { error, loading, status = {} } = useCrowdloanStatus(crowdloanHelper, softCap)
@@ -238,27 +232,22 @@ export default function CrowdloanForm(props) {
                             setState,
                         )
                     },
-                    'initialize'
+                    'initialize',
                 )
             )
     }, [])
 
     useEffect(() => {
         if (!loading && !error) {
-            const statusIn = findInput(
-                inputNames.crowdloanStatus,
-                rxInputs.value,
-            )
-            const pledgeIn = findInput(
-                inputNames.amountPledged,
-                rxInputs.value,
-            )
+            const statusIn = findInput(inputNames.crowdloanStatus, rxInputs.value)
+            const pledgeIn = findInput(inputNames.amountPledged, rxInputs.value)
             // trigger an update on the pledge input which will update the calculated rewards
             pledgeIn?.onChange(
                 getValues(rxInputs.value),
                 rxInputs.value,
             )
             statusIn.value = status
+            if (!status.active) pledgeIn.label = textsCap.amtPlgLabel2
             rxInputs.next([...rxInputs.value])
         }
     }, [status])
@@ -835,16 +824,16 @@ const identityOptionsModifier = (rxInputs, classes) => identities => {
                 ? { // Polkadot logo
                     src: logos.polkadot,
                     style: {
+                        height: 31,
                         margin: '-12px 0 -12px -6px',
-                        maxWidth: 36,
                         paddingRight: 5,
                     },
                 }
                 : { // Totem logo
                     src: logos.totem,
                     style: {
+                        height: 26,
                         margin: '-7px -1px -7px -3px',
-                        maxWidth: 34,
                         paddingRight: 8,
                     },
                 }
