@@ -323,7 +323,7 @@ export const getRxInputs = (classes) => {
         } else if (softCapReached) {
             reward *= 1.1
         }
-        return Number(reward.toFixed(2))
+        return Number(reward.toFixed(4))
     }
     const handleAmtToContChange = (values, inputs) => {
         const amountContributed = values[inputNames.amountContributed] || 0

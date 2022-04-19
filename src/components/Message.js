@@ -52,6 +52,7 @@ export default function Message({ content, header, icon, id, status, style, text
     icon = icon !== true
         ? icon
         : STATUS_ICON[status]
+
     return !text && !header
         ? ''
         : (
@@ -63,41 +64,36 @@ export default function Message({ content, header, icon, id, status, style, text
                     borderRadius: 4,
                     margin: '10px 0',
                     maxWidth: '100%',
+                    minHeight: 60,
                     overflowX: 'auto',
                     padding: 7,
                     whiteSpace: 'auto',
                     ...style,
                 }
             }}>
-                {!!icon && (
-                    <div style={{
-                        display: 'inline-block',
-                        // paddingLeft: 5,
-                        verticalAlign: 'top',
-                    }}>
-                        {icon}
-                    </div>
-                )}
                 <Typography {...{
                     component: 'div',
                     style: {
                         color: color[900],
                         display: 'inline-block',
+                        marginLeft: !!icon ? 50 : 0,
                         padding: !!header
-                            ? '0 0 0 10px'
-                            : '7px 15px',
-                        maxWidth: !!icon && 'calc( 100% - 58px )' || '',
+                            ? '0 0 7px 7px'
+                            : 7,
                     }
                 }}>
-                    {header && (
-                        <div>
-                            <b>
-                                {header}
-                            </b>
-                        </div>
-                    )}
+                    <div><b>{header || ''}</b></div>
                     {text}
                 </Typography>
+                {!!icon && (
+                    <div style={{
+                        left: 10,
+                        position: 'absolute',
+                        top: 5,
+                    }}>
+                        {icon}
+                    </div>
+                )}
             </Box>
         )
 }
