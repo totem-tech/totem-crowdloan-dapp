@@ -33,12 +33,14 @@ import { useRxSubject } from '../../utils/reactHelper'
 import { checkExtenstion, enableExtionsion } from './checkExtension'
 import { ContentCopy, OpenInNew } from '@mui/icons-material'
 
-const PLEDGE_PERCENTAGE = 0.1 // 10%
+const PLEDGE_PERCENTAGE = 1 // 100%
+const PLDEGE_REWARD = 0.32
+const BASE_REWARD = 0.1
 const [texts, textsCap] = translated({
     amtContdLabel: 'amount already contributed',
     amtPlgLabel: 'amount you would like to pledge',
     amtPlgLabel2: 'amount you pledged',
-    amtPlgLabelDetails: 'You can pledge upto a maximum 10% of your crowdloan contribution.',
+    amtPlgLabelDetails: 'You can pledge upto a maximum 100% of your crowdloan contribution.',
     amtPlgLabelDetails2: 'learn more',
     amtRewardsLabel: 'estimated rewards',
     amtRewardsLabelDetails: 'learn more about rewards distribution',
@@ -312,12 +314,13 @@ const customError = (title, subtitle) => error => {
 export const getRxInputs = (classes) => {
     const rxInputs = new BehaviorSubject()
     const calculateRewards = (amtContribution = 0, amtPledge = 0, softCapReached, targetCapReached) => {
-        let reward = amtContribution * .1
-        if (amtPledge > 0) {
-            const totalCommitment = amtContribution + amtPledge
-            const ratio = amtPledge / amtContribution
-            reward = totalCommitment * (1 + ratio) * .1
-        }
+        // let reward = amtContribution * .1
+        // if (amtPledge > 0) {
+        //     const totalCommitment = amtContribution + amtPledge
+        //     const ratio = amtPledge / amtContribution
+        //     reward = totalCommitment * (1 + ratio) * .1
+        // }
+        let reward = amtContribution * BASE_REWARD + amtPledge * PLDEGE_REWARD
         if (targetCapReached) {
             reward *= 1.2
         } else if (softCapReached) {
