@@ -354,18 +354,18 @@ export const getRxInputs = (classes) => {
                     .fill(0)
                     .map((_, i) => {
                         let value = (pledgeIn.max / 5) * (i + 1)
-                        const decimals = value > 100 ? 0 : 2
-                        value = value.toFixed(decimals)
+                        const decimals = value > 10 ? 0 : 2
+                        value = Number(value.toFixed(decimals))
                         return {
                             label: value,
-                            value: Number(value),
+                            value,
                         }
                     }),
                 {
                     label: pledgeIn.max,
                     value: Number(
                         pledgeIn.max
-                            .toFixed(pledgeIn.max > 100 ? 0 : 2)
+                            .toFixed(pledgeIn.max > 10 ? 0 : 2)
                     ),
                 },
             ]
