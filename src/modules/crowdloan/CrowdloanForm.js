@@ -32,6 +32,7 @@ import FormTitle from './FormTitle'
 import { useRxSubject } from '../../utils/reactHelper'
 import { checkExtenstion, enableExtionsion } from './checkExtension'
 import { ContentCopy, OpenInNew } from '@mui/icons-material'
+import { shorten } from '../../utils/number'
 
 const PLEDGE_PERCENTAGE = 0.3125 // 31.25%
 const PLDEGE_REWARD = 0.32
@@ -250,7 +251,7 @@ export default function CrowdloanForm(props) {
                 rxInputs.value,
             )
             statusIn.value = status
-            if (!status.active) pledgeIn.label = textsCap.amtPlgLabel2
+            if (!status.active) pledgeIn.label = `${textsCap.amtPlgLabel2} (${blockchainHelper.unit.name})`
             rxInputs.next([...rxInputs.value])
         }
     }, [status])
@@ -338,13 +339,16 @@ export const getRxInputs = (classes) => {
         pledgeIn.disabled = disabled
         pledgeIn.max = disabled
             ? 0
-            : Number(
-                (totalContribution * PLEDGE_PERCENTAGE)
-                    .toFixed(2)
-            ) || 0
+            : totalContribution * PLEDGE_PERCENTAGE
+        pledgeIn.max = Number(
+            pledgeIn.max.toFixed(
+                pledgeIn.max > 10 ? 0 : 2
+            )
+        )
         pledgeIn.min = pledgeIn.min > pledgeIn.max
             ? pledgeIn.max
             : pledgeIn.min
+
         pledgeIn.marks = !!pledgeIn.max
             && [
                 {
@@ -358,16 +362,13 @@ export const getRxInputs = (classes) => {
                         const decimals = value > 10 ? 0 : 2
                         value = Number(value.toFixed(decimals))
                         return {
-                            label: value,
+                            label: shorten(value, 2),
                             value,
                         }
                     }),
                 {
-                    label: pledgeIn.max,
-                    value: Number(
-                        pledgeIn.max
-                            .toFixed(pledgeIn.max > 10 ? 0 : 2)
-                    ),
+                    label: shorten(pledgeIn.max, 2),
+                    value: pledgeIn.max,
                 },
             ]
         pledgeIn.step = pledgeIn.max > 1000
@@ -514,7 +515,7 @@ export const getRxInputs = (classes) => {
         {
             disabled: true,
             valueLabelDisplay: 'auto',
-            label: textsCap.amtPlgLabel,
+            label: `${textsCap.amtPlgLabel} (${blockchainHelper.unit.name})`,
             labelDetails: (
                 <div>
                     {textsCap.amtPlgLabelDetails} {textsCap.amtPlgLabelDetails2 + ' '}
