@@ -91,7 +91,7 @@ function CrowdloanStatusSteps({ status }) {
                 </div>
             ),
         },
-        targetCapReached && {
+        {
             completed: hardCapReached,
             label: textsCap.stepHardCap,
             labelDetails: (
