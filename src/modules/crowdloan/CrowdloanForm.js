@@ -342,11 +342,7 @@ export const getRxInputs = (classes) => {
         pledgeIn.max = disabled
             ? 0
             : totalContribution * PLEDGE_PERCENTAGE
-        pledgeIn.max = Number(
-            pledgeIn.max.toFixed(
-                pledgeIn.max > 10 ? 0 : 2
-            )
-        )
+        pledgeIn.max = Number(pledgeIn.max.toFixed(2))
         pledgeIn.min = pledgeIn.min > pledgeIn.max
             ? pledgeIn.max
             : pledgeIn.min
@@ -437,6 +433,7 @@ export const getRxInputs = (classes) => {
     }
     const handlePledgeChange = (values, inputs) => {
         const rewardsIn = findInput(inputNames.amountRewards, inputs)
+        const pledgeIn = findInput(inputNames.amountPledged, inputs)
         const contributed = values[inputNames.amountContributed] || 0
         const toContribute = values[inputNames.amountToContribute] || 0
         const {
@@ -454,6 +451,9 @@ export const getRxInputs = (classes) => {
                 softCapReached,
                 targetCapReached,
             )
+        pledgeIn.color = pledgeIn.value > 0 && pledgeIn.max === pledgeIn.value
+            ? 'secondary'
+            : undefined
         return true
     }
     const tokenInputProps = (ticker = blockchainHelper?.unit?.name || 'DOT') => ({
@@ -769,7 +769,7 @@ const handleSubmit = (rxInputs, setState) => async (_, values) => {
                         <br />
                         <Button {...{
                             color: 'success',
-                            Component: 'a',
+                            // Component: 'a',
                             href: explorerUrl,
                             target: '_blank',
                             variant: 'outlined',
