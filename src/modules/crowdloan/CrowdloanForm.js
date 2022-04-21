@@ -22,7 +22,7 @@ import {
     objToUrlParams,
     textEllipsis,
 } from '../../utils/utils'
-import blockchainHelper, { crowdloanHelper, softCap } from '../blockchain/'
+import blockchainHelper, { crowdloanHelper, softCap, targetCap } from '../blockchain/'
 import Balance, { useBalance } from '../blockchain/Balance'
 import getClient from '../messaging/'
 import useCrowdloanStatus from './useCrowdloanStatus'
@@ -33,15 +33,16 @@ import { useRxSubject } from '../../utils/reactHelper'
 import { checkExtenstion, enableExtionsion } from './checkExtension'
 import { ContentCopy, OpenInNew } from '@mui/icons-material'
 
-const PLEDGE_PERCENTAGE = 1 // 100%
+const PLEDGE_PERCENTAGE = 0.3125 // 31.25%
 const PLDEGE_REWARD = 0.32
 const BASE_REWARD = 0.1
 const [texts, textsCap] = translated({
     amtContdLabel: 'amount already contributed',
     amtPlgLabel: 'amount you would like to pledge',
     amtPlgLabel2: 'amount you pledged',
-    amtPlgLabelDetails: 'You can pledge upto a maximum 100% of your crowdloan contribution.',
-    amtPlgLabelDetails2: 'learn more',
+    amtPlgLabelDetails: 'You can pledge upto a maximum 31.25% of your crowdloan contribution.',
+    amtPlgLabelDetails2: 'Your pledged amount will be requested only after a parachain slot is won.',
+    amtPlgLabelDetails3: 'learn more',
     amtRewardsLabel: 'estimated rewards',
     amtRewardsLabelDetails: 'learn more about rewards distribution',
     amtToContLabel: 'amount you would like to contribute now',
@@ -117,7 +118,7 @@ export default function CrowdloanForm(props) {
     })
     const [rxInputs] = useState(() => getRxInputs(classes))
     const [inputs] = useRxSubject(rxInputs)
-    let { error, loading, status = {} } = useCrowdloanStatus(crowdloanHelper, softCap)
+    let { error, loading, status = {} } = useCrowdloanStatus(crowdloanHelper, softCap, targetCap)
     const statusIn = findInput(inputNames.crowdloanStatus, inputs) || {}
     const { active, isValid } = statusIn.value || {}
     const initModalId = 'init'
@@ -369,9 +370,13 @@ export const getRxInputs = (classes) => {
                     ),
                 },
             ]
-        pledgeIn.step = (pledgeIn.max || 0) < 10
-            ? pledgeIn.max / 10
-            : 1
+        pledgeIn.step = pledgeIn.max > 1000
+            ? 10
+            : pledgeIn.max > 100
+                ? 1
+                : pledgeIn.max > 10
+                    ? 0.1
+                    : 0.01
         pledgeIn.value = pledgeIn.value > pledgeIn.max
             ? pledgeIn.max
             : pledgeIn.value
@@ -512,12 +517,12 @@ export const getRxInputs = (classes) => {
             label: textsCap.amtPlgLabel,
             labelDetails: (
                 <div>
-                    {textsCap.amtPlgLabelDetails + ' '}
+                    {textsCap.amtPlgLabelDetails} {textsCap.amtPlgLabelDetails2 + ' '}
                     <a
                         className={classes.link}
                         href='https://docs.totemaccounting.com/#/crowdloan/participation?id=what-is-a-pledge' target='_blank'
                     >
-                        {textsCap.amtPlgLabelDetails2}
+                        {textsCap.amtPlgLabelDetails3}
                     </a>
                 </div>
             ),

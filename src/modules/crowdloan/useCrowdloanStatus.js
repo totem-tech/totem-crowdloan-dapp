@@ -14,7 +14,7 @@ import blockchainHelper from '../blockchain/'
  * 
  * @returns {Array} {error, loading, status: {active, isValid....}}
  */
-export default function useCrowdloanStatus(crowdloanHelper, softCap) {
+export default function useCrowdloanStatus(crowdloanHelper, softCap, targetCap) {
     const [{ status, loading, error }, setState] = useState({
         loading: true,
     })
@@ -56,6 +56,8 @@ export default function useCrowdloanStatus(crowdloanHelper, softCap) {
                 isValid,
                 softCap,
                 softCapReached: isValid && isValidNumber(softCap) && amountRaised >= softCap,
+                targetCap,
+                targetCapReached: isValid && isValidNumber(targetCap) && amountRaised >= targetCap,
             }
 
             if (!mounted || JSON.stringify(status) === JSON.stringify(_status)) return

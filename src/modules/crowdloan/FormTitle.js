@@ -9,12 +9,12 @@ import {
 import Message, { STATUS } from '../../components/Message'
 import { translated } from '../../utils/languageHelper'
 import { isFn } from '../../utils/utils'
-import blockchainHelper, { crowdloanHelper, dappTitle, softCap } from '../blockchain'
-import useCrowdloanStatus from './useCrowdloanStatus'
+import blockchainHelper, { dappTitle } from '../blockchain'
 import { shorten } from '../../utils/number'
 import useStyles from './useStyles'
 import { useRxSubject } from '../../utils/reactHelper'
 import { findInput } from '../../components/form/InputCriteriaHint'
+import { checkDevice, DEVICE_TYPE } from '../../utils/checkDevice'
 
 const [texts, textsCap] = translated({
     amountRaised: 'amount raised',
@@ -24,10 +24,11 @@ const [texts, textsCap] = translated({
     errCrowdloanEndedDetails: 'you can no longer make new contributions',
     errCrowdloanInvalid: 'crowdloan is coming soon',
     errCrowdloanInvalidDetails: 'please join our social media channels for announcements',
-    step10PBonus: '10% bonus',
-    stepHardCap: 'target cap',
+    bonus: 'bonus',
+    stepHardCap: 'hard cap',
     stepStarted: 'started',
     stepSoftCap: 'soft cap',
+    stepTargetCap: 'target cap',
 }, true)
 
 export const inputNames = {
@@ -52,8 +53,15 @@ function CrowdloanStatusSteps({ status }) {
         isValid,
         softCap,
         softCapReached,
+        targetCap,
+        targetCapReached,
     } = status
     const ticker = blockchainHelper.unit.name || 'DOT'
+    const bonusStyle = { color: 'deeppink' }
+    const capStyle = { fontWeight: 'initial' }
+    const isMobile = checkDevice([DEVICE_TYPE.mobile])
+
+
     const steps = [
         {
             completed: true,
@@ -63,21 +71,34 @@ function CrowdloanStatusSteps({ status }) {
             completed: softCapReached,
             label: textsCap.stepSoftCap,
             labelDetails: (
-                <div>
+                <div style={capStyle}>
                     {shorten(softCap, 2)} {ticker}
                     <br />
-                    <i>+{textsCap.step10PBonus}</i>
+                    <i style={bonusStyle}>10% {texts.bonus}</i>
                 </div>
             ),
         },
-        {
+        targetCap
+        && targetCap !== hardCap
+        && {
+            completed: targetCapReached,
+            label: textsCap.stepTargetCap,
+            labelDetails: (
+                <div style={capStyle}>
+                    {shorten(targetCap, 2)} {ticker}
+                    <br />
+                    <i style={bonusStyle}>20% {texts.bonus}</i>
+                </div>
+            ),
+        },
+        targetCapReached && {
             completed: hardCapReached,
             label: textsCap.stepHardCap,
             labelDetails: (
-                <div>
+                <div style={capStyle}>
                     {shorten(hardCap, 2)} {ticker}
                     <br />
-                    <i>+{textsCap.step10PBonus}</i>
+                    <i style={bonusStyle}>20% {texts.bonus}</i>
                 </div>
             ),
         },
@@ -113,6 +134,7 @@ function CrowdloanStatusSteps({ status }) {
                         <Step {...{
                             completed: x.completed,
                             key: i,
+                            style: { padding: 0 },
                             title: x.title,
                         }}>
                             <StepLabel StepIconProps={{
