@@ -1,18 +1,22 @@
 import React, { useEffect, useState } from 'react'
-import { BehaviorSubject } from 'rxjs'
+import { ContentCopy, OpenInNew } from '@mui/icons-material'
 import {
     Button,
     CircularProgress,
     colors,
     InputAdornment,
 } from '@mui/material'
+// Components & Utils
+import { BehaviorSubject } from 'rxjs'
 import FormBuilder from '../../components/form/FormBuilder'
 import { findInput, getValues } from '../../components/form/InputCriteriaHint'
 import Message, { STATUS } from '../../components/Message'
 import modalService from '../../components/modal/modalService'
 import { getUser } from '../../utils/chatClient'
 import { translated } from '../../utils/languageHelper'
+import { shorten } from '../../utils/number'
 import PromisE from '../../utils/PromisE'
+import { useRxSubject } from '../../utils/reactHelper'
 import identityHelper from '../../utils/substrate/identityHelper'
 import {
     arrSort,
@@ -22,17 +26,15 @@ import {
     objToUrlParams,
     textEllipsis,
 } from '../../utils/utils'
+// Modules
 import blockchainHelper, { crowdloanHelper, softCap, targetCap } from '../blockchain/'
-import Balance, { useBalance } from '../blockchain/Balance'
+import Balance from '../blockchain/Balance'
 import getClient from '../messaging/'
-import useCrowdloanStatus from './useCrowdloanStatus'
-import useStyles from './useStyles'
+import { checkExtenstion, enableExtionsion } from './checkExtension'
 import Contributed from './Contributed'
 import FormTitle from './FormTitle'
-import { useRxSubject } from '../../utils/reactHelper'
-import { checkExtenstion, enableExtionsion } from './checkExtension'
-import { ContentCopy, OpenInNew } from '@mui/icons-material'
-import { shorten } from '../../utils/number'
+import useCrowdloanStatus from './useCrowdloanStatus'
+import useStyles from './useStyles'
 
 const PLEDGE_PERCENTAGE = 0.3125 // 31.25%
 const PLDEGE_REWARD = 0.32
