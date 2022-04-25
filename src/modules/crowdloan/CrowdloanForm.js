@@ -36,14 +36,14 @@ import FormTitle from './FormTitle'
 import useCrowdloanStatus from './useCrowdloanStatus'
 import useStyles from './useStyles'
 
-const PLEDGE_PERCENTAGE = 0.3125 // 31.25%
+const PLEDGE_PERCENTAGE = 1 // 100%
 const PLDEGE_REWARD = 0.32
 const BASE_REWARD = 0.1
 const [texts, textsCap] = translated({
     amtContdLabel: 'amount already contributed',
     amtPlgLabel: 'amount you would like to pledge',
     amtPlgLabel2: 'amount you pledged',
-    amtPlgLabelDetails: 'You can pledge upto a maximum 31.25% of your crowdloan contribution.',
+    amtPlgLabelDetails: 'You can pledge upto a maximum 100% of your crowdloan contribution.',
     amtPlgLabelDetails2: 'Your pledged amount will be requested only after a parachain slot is won.',
     amtPlgLabelDetails3: 'learn more',
     amtRewardsLabel: 'estimated rewards',
