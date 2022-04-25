@@ -1,9 +1,12 @@
 import React, { useEffect, useState } from 'react'
-import { unsubscribe } from '../../utils/reactHelper'
+import { BehaviorSubject } from 'rxjs'
+import { getClient, rxIsConnected } from '../../utils/chatClient'
+import { subjectAsPromise, unsubscribe } from '../../utils/reactHelper'
 import CrowdloanHelper from '../../utils/substrate/CrowdloanHelper'
 import { deferred, isValidNumber } from '../../utils/utils'
 import blockchainHelper from '../blockchain/'
 
+const rxPledgeTotal = new BehaviorSubject(0)
 /**
  * @name    useCrowdloanStatus
  * @summary React hook to get the current status of a parachain
@@ -14,7 +17,7 @@ import blockchainHelper from '../blockchain/'
  * 
  * @returns {Array} {error, loading, status: {active, isValid....}}
  */
-export default function useCrowdloanStatus(crowdloanHelper, softCap, targetCap) {
+export default function useCrowdloanStatus(crowdloanHelper, softCap, targetCap, pledgeCap) {
     const [{ status, loading, error }, setState] = useState({
         loading: true,
     })
@@ -22,7 +25,7 @@ export default function useCrowdloanStatus(crowdloanHelper, softCap, targetCap) 
     useEffect(() => {
         let mounted = true
         const unsub = {}
-        let amountRaised, currentBlock, endBlock, hardCap, status, isValid
+        let amountRaised, currentBlock, endBlock, hardCap, isValid, pledgeCapReached, status
         const subscribe = async () => {
             unsub.block = await blockchainHelper.getCurrentBlock(block => {
                 currentBlock = block
@@ -34,6 +37,10 @@ export default function useCrowdloanStatus(crowdloanHelper, softCap, targetCap) 
                 endBlock = end
                 hardCap = cap
                 isValid = result !== null && cap > 0 && end > 0
+                updateStatus()
+            })
+            unsub.pledgedTotal = rxPledgeTotal.subscribe(value => {
+                pledgeCapReached = pledgeCap && value >= pledgeCap
                 updateStatus()
             })
         }
@@ -54,6 +61,8 @@ export default function useCrowdloanStatus(crowdloanHelper, softCap, targetCap) 
                 hardCap,
                 hardCapReached: isValid && amountRaised >= hardCap,
                 isValid,
+                pledgeCap,
+                pledgeCapReached,
                 softCap,
                 softCapReached: isValid && isValidNumber(softCap) && amountRaised >= softCap,
                 targetCap,
@@ -82,3 +91,11 @@ export default function useCrowdloanStatus(crowdloanHelper, softCap, targetCap) 
 
     return { error, loading, status }
 }
+
+subjectAsPromise(rxIsConnected, true)[0]
+    .then(() => {
+        getClient()
+            .onCrowdloanPledgeTotal(value =>
+                rxPledgeTotal.next(value) | console.log({ pledgedTotal: value })
+            )
+    })

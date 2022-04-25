@@ -27,7 +27,7 @@ import {
     textEllipsis,
 } from '../../utils/utils'
 // Modules
-import blockchainHelper, { crowdloanHelper, softCap, targetCap } from '../blockchain/'
+import blockchainHelper, { crowdloanHelper, pledgeCap, softCap, targetCap } from '../blockchain/'
 import Balance from '../blockchain/Balance'
 import getClient from '../messaging/'
 import { checkExtenstion, enableExtionsion } from './checkExtension'
@@ -36,9 +36,9 @@ import FormTitle from './FormTitle'
 import useCrowdloanStatus from './useCrowdloanStatus'
 import useStyles from './useStyles'
 
+const BASE_REWARD = 0.1
 const PLEDGE_PERCENTAGE = 1 // 100%
 const PLDEGE_REWARD = 0.32
-const BASE_REWARD = 0.1
 const [texts, textsCap] = translated({
     amtContdLabel: 'amount already contributed',
     amtPlgLabel: 'amount you would like to pledge',
@@ -121,7 +121,12 @@ export default function CrowdloanForm(props) {
     })
     const [rxInputs] = useState(() => getRxInputs(classes))
     const [inputs] = useRxSubject(rxInputs)
-    let { error, loading, status = {} } = useCrowdloanStatus(crowdloanHelper, softCap, targetCap)
+    let { error, loading, status = {} } = useCrowdloanStatus(
+        crowdloanHelper,
+        softCap,
+        targetCap,
+        pledgeCap,
+    )
     const statusIn = findInput(inputNames.crowdloanStatus, inputs) || {}
     const { active, isValid } = statusIn.value || {}
     const initModalId = 'init'
@@ -247,6 +252,7 @@ export default function CrowdloanForm(props) {
         if (!loading && !error) {
             const statusIn = findInput(inputNames.crowdloanStatus, rxInputs.value)
             const pledgeIn = findInput(inputNames.amountPledged, rxInputs.value)
+            pledgeIn.disabled = status.pledgeCapReached
             // trigger an update on the pledge input which will update the calculated rewards
             pledgeIn?.onChange(
                 getValues(rxInputs.value),
@@ -335,10 +341,11 @@ export const getRxInputs = (classes) => {
     const handleAmtToContChange = (values, inputs) => {
         const amountContributed = values[inputNames.amountContributed] || 0
         const amountToContribute = values[inputNames.amountToContribute] || 0
+        const status = values[inputNames.crowdloanStatus]
         const totalContribution = amountContributed + amountToContribute
         const pledgeIn = findInput(inputNames.amountPledged, inputs)
         const disabled = totalContribution <= 0
-        pledgeIn.disabled = disabled
+        pledgeIn.disabled = disabled || status?.pledgeCapReached
         pledgeIn.max = disabled
             ? 0
             : totalContribution * PLEDGE_PERCENTAGE
