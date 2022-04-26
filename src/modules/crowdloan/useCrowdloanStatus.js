@@ -40,7 +40,7 @@ export default function useCrowdloanStatus(crowdloanHelper, softCap, targetCap, 
                 updateStatus()
             })
             unsub.pledgedTotal = rxPledgeTotal.subscribe(value => {
-                pledgeCapReached = pledgeCap && value >= pledgeCap
+                pledgeCapReached = !!pledgeCap && value >= pledgeCap
                 updateStatus()
             })
         }
