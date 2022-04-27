@@ -131,9 +131,9 @@ export default function CrowdloanForm(props) {
     const { active, isValid } = statusIn.value || {}
     const initModalId = 'init'
 
-    // useEffect(() => {
-    if (!!statusIn.value) modalService.delete(initModalId)
-    // }, [statusIn.value])
+    useEffect(() => {
+        if (!!statusIn.value) modalService.delete(initModalId)
+    }, [statusIn.value])
 
     useEffect(() => {
         if (!crowdloanHelper.parachainId) {

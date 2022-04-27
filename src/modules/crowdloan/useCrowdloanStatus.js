@@ -3,7 +3,7 @@ import { BehaviorSubject } from 'rxjs'
 import { getClient, rxIsConnected } from '../../utils/chatClient'
 import { subjectAsPromise, unsubscribe } from '../../utils/reactHelper'
 import CrowdloanHelper from '../../utils/substrate/CrowdloanHelper'
-import { deferred, isValidNumber } from '../../utils/utils'
+import { deferred, isBool, isValidNumber } from '../../utils/utils'
 import blockchainHelper from '../blockchain/'
 
 const rxPledgeTotal = new BehaviorSubject(0)
@@ -45,11 +45,9 @@ export default function useCrowdloanStatus(crowdloanHelper, softCap, targetCap, 
             })
         }
         const updateStatus = deferred(() => {
-            const allReceived = [
-                amountRaised,
-                currentBlock,
-                endBlock,
-            ].every(isValidNumber)
+            const allReceived = [amountRaised, currentBlock, endBlock]
+                .every(isValidNumber)
+                && isBool(pledgeCapReached)
             // skip if not all values retrieved
             if (!allReceived) return
 
