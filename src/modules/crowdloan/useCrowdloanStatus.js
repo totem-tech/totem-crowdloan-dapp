@@ -4,7 +4,7 @@ import { getClient, rxIsConnected } from '../../utils/chatClient'
 import { subjectAsPromise, unsubscribe } from '../../utils/reactHelper'
 import CrowdloanHelper from '../../utils/substrate/CrowdloanHelper'
 import { deferred, isBool, isValidNumber } from '../../utils/utils'
-import blockchainHelper from '../blockchain/'
+import blockchainHelper, { crowdloanActive } from '../blockchain/'
 
 const rxPledgeTotal = new BehaviorSubject(0)
 /**
@@ -52,7 +52,8 @@ export default function useCrowdloanStatus(crowdloanHelper, softCap, targetCap, 
             if (!allReceived) return
 
             const _status = {
-                active: isValid
+                active: crowdloanActive
+                    && isValid
                     && currentBlock < endBlock
                     && amountRaised < hardCap,
                 amountRaised,

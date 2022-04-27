@@ -150,7 +150,7 @@ export const handleInputChange = (setState, field = {}) => e => {
  * 
  * @returns {Object} input
  */
-export const validateInput = (input, values, inputs) => {
+export const validateInput = (input, inputs = [], values = getValues(inputs)) => {
     input.validation = input.validation || {}
     const {
         type,
@@ -180,7 +180,7 @@ export const validateInput = (input, values, inputs) => {
     }
 
     if (!err && isFn(validate)) {
-        err = validate(values, inputs, input)
+        err = validate(input, inputs, values)
         valid.push(!err)
     }
     // validation error message

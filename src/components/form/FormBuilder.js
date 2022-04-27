@@ -10,13 +10,16 @@ import modalService from '../modal/modalService'
 import FormInput from './FormInput'
 import { findInput, getValues, validateInput } from './InputCriteriaHint'
 
-const attachName = values => inputs => (inputs || [])
-    .map((input, i) => {
-        input.name = input.name || `input-${i}`
-        // validate inputs whenever rxInputs change is triggered // ToDo: remove redundant manual validations elsewhere
-        validateInput(input, inputs, values)
-        return input
-    })
+const attachName = inputs => {
+    const values = getValues(inputs)
+    return (inputs || [])
+        .map((input, i) => {
+            input.name = input.name || `input-${i}`
+            // validate inputs whenever rxInputs change is triggered // ToDo: remove redundant manual validations elsewhere
+            validateInput(input, inputs, values)
+            return input
+        })
+}
 export default function FormBuilder(props) {
     let {
         closeOnSubmit,
@@ -35,7 +38,7 @@ export default function FormBuilder(props) {
     } = props
     const [rxValues] = useState(() => _rxValues || new BehaviorSubject(valuesOriginal))
     const [values] = useRxSubject(rxValues, x => x || {})
-    const [inputs] = useRxSubject(rxInputs, attachName(values))
+    const [inputs] = useRxSubject(rxInputs, attachName)
     loading = loading
         || message?.status === STATUS.loading
 

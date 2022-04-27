@@ -1,26 +1,44 @@
 import React from 'react'
 import ReactDOM from 'react-dom'
+import { colors } from '@mui/material'
+import { createTheme, ThemeProvider } from '@mui/material/styles'
 import ComingSoon from './components/ComingSoon'
 import modalService from './components/modal/modalService'
+import AppContainer from './components/AppContainer'
 import blockchainHelper from './modules/blockchain'
-// import { Typography } from '@mui/material'
 import { crowdloanHelper } from './modules/blockchain'
 import identityHelper from './utils/substrate/identityHelper'
 import App from './App'
-import AppContainer from './components/AppContainer'
 
 const showComingSoon = process.env.REACT_APP_COMING_SOON === 'true'
 const appEnv = process.env.REACT_APP_ENV
 const nodeEnv = process.env.NODE_ENV
 console.log(`${appEnv} in ${nodeEnv} mode`)
 
+const { green, red } = colors
+const theme = createTheme(({
+    palette: {
+        danger: {
+            main: red[500]
+        },
+        dangerDark: {
+            main: red[900]
+        },
+        success: {
+            main: green[500],
+        },
+    }
+}))
+
 ReactDOM.render(
     (
-        <AppContainer>
-            {showComingSoon
-                ? <ComingSoon />
-                : <App />}
-        </AppContainer>
+        <ThemeProvider theme={theme}>
+            <AppContainer>
+                {showComingSoon
+                    ? <ComingSoon />
+                    : <App />}
+            </AppContainer>
+        </ThemeProvider>
     ),
     document.getElementById('root'),
 )
@@ -57,11 +75,3 @@ if (!showComingSoon) {
 
     connectBlockchain()
 }
-
-// utils.PromisE.post(
-//     'https://polkadot.api.subscan.io/api/scan/parachain/funds',
-//     { row: 1, para_id: 2004 }
-// ).then(r => console.log('Raised: ', Number(r.data.funds?.[0]?.raised) * 1e-10))
-
-// crowdloanHelper.getFundsRaisedSubscan('https://polkadot.api.subscan.io', 5007)
-//     .then(console.warn)

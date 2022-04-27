@@ -12,6 +12,7 @@ export const parachainId = parseInt(process.env.REACT_APP_PARACHAIN_ID) || undef
 export const pledgeCap = parseFloat(process.env.PLDEGE_CAP) || 0
 export const softCap = parseFloat(process.env.REACT_APP_SOFT_CAP) || 0
 export const targetCap = parseFloat(process.env.REACT_APP_TARGET_CAP) || 0
+export const crowdloanActive = process.env.REACT_APP_CROWDLOAN_ACTIVE !== 'NO'
 const chainTitle = process.env.REACT_APP_CHAIN_TITLE || textsCap.blockchainNetwork
 export const dappTitle = process.env.REACT_APP_DAPP_TITLE || textsCap.unnamed
 const nodeUrls = (process.env.REACT_APP_NODE_URL || '')

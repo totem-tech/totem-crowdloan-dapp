@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { ContentCopy, OpenInNew } from '@mui/icons-material'
+import { Celebration, ContentCopy, OpenInNew } from '@mui/icons-material'
 import {
     Button,
     CircularProgress,
@@ -9,8 +9,8 @@ import {
 // Components & Utils
 import { BehaviorSubject } from 'rxjs'
 import FormBuilder from '../../components/form/FormBuilder'
-import { findInput, getValues } from '../../components/form/InputCriteriaHint'
-import Message, { STATUS } from '../../components/Message'
+import { findInput, getValues, validateInput } from '../../components/form/InputCriteriaHint'
+import Message, { STATUS, STATUS_ICON } from '../../components/Message'
 import modalService from '../../components/modal/modalService'
 import { getUser } from '../../utils/chatClient'
 import { translated } from '../../utils/languageHelper'
@@ -22,7 +22,6 @@ import {
     arrSort,
     isError,
     isFn,
-    objClean,
     objToUrlParams,
     textEllipsis,
 } from '../../utils/utils'
@@ -30,24 +29,30 @@ import {
 import blockchainHelper, { crowdloanHelper, pledgeCap, softCap, targetCap } from '../blockchain/'
 import Balance from '../blockchain/Balance'
 import getClient from '../messaging/'
-import { checkExtenstion, enableExtionsion } from './checkExtension'
+import { AccordionGroup, checkExtenstion, enableExtionsion } from './checkExtension'
 import Contributed from './Contributed'
 import FormTitle from './FormTitle'
 import useCrowdloanStatus from './useCrowdloanStatus'
 import useStyles from './useStyles'
+import FormInput from '../../components/form/FormInput'
 
 const BASE_REWARD = 0.1
 const PLEDGE_PERCENTAGE = 1 // 100%
 const PLDEGE_REWARD = 0.32
 const [texts, textsCap] = translated({
     amtContdLabel: 'amount already contributed',
+    amtPlgCapReachedMsg: 'We have reached the pledge cap. You can continue to make new contributions until hard cap is reached and crowdloan is active. However, you will not be able to update the pledge amount.',
+    amtPlgCapReachedTitle: 'pledge cap reached!',
+    amtPlgInvalid: 'please enter an amount greater or equal to your previously pledged amount',
     amtPlgLabel: 'amount you would like to pledge',
     amtPlgLabel2: 'amount you pledged',
     amtPlgLabelDetails: 'You can pledge upto a maximum 100% of your crowdloan contribution.',
     amtPlgLabelDetails2: 'Your pledged amount will be requested only after a parachain slot is won.',
     amtPlgLabelDetails3: 'learn more',
+    amtPlgResetValue: 'click to reset to previous pledge amount',
     amtRewardsLabel: 'estimated rewards',
-    amtRewardsLabelDetails: 'learn more about rewards distribution',
+    amtRewardsLabelDetails1: 'indicates minimum expected reward excluding any referral and campaign rewards.',
+    amtRewardsLabelDetails2: 'learn more about rewards distribution',
     amtToContLabel: 'amount you would like to contribute now',
     amtToContLabelDetails: 'you can always return to contribute as many times as you like before the end of the crowdloan',
     close: 'close',
@@ -71,6 +76,7 @@ const [texts, textsCap] = translated({
     errCrowdloanEndedDetails: 'you can no longer make new contributions',
     errFetchContribution: 'failed to retrieve previous contributions',
     errPledgeSave: 'failed to store contribution data',
+    errPledgeSaveSubtitle: 'Your contribution was successful. However, the request to store your contribution and pledge data on our database failed! Please check the error message below:',
     errSignature: 'signature pre-validation failed',
     errTxFailed: 'transaction failed',
     fetchingContributions: 'checking existing contributions...',
@@ -253,6 +259,24 @@ export default function CrowdloanForm(props) {
             const statusIn = findInput(inputNames.crowdloanStatus, rxInputs.value)
             const pledgeIn = findInput(inputNames.amountPledged, rxInputs.value)
             pledgeIn.disabled = status.pledgeCapReached
+            if (status.pledgeCapReached) {
+                pledgeIn.message = {
+                    content: textsCap.amtPlgCapReachedMsg,
+                    header: (
+                        <span style={{ color: 'deeppink' }}>
+                            {textsCap.amtPlgCapReachedTitle}
+                        </span>
+                    ),
+                    icon: (
+                        <Celebration
+                            style={{
+                                color: 'deeppink',
+                                fontSize: 48,
+                                verticalAlign: 'middle',
+                            }} />
+                    ),
+                }
+            }
             // trigger an update on the pledge input which will update the calculated rewards
             pledgeIn?.onChange(
                 getValues(rxInputs.value),
@@ -324,12 +348,6 @@ const customError = (title, subtitle) => error => {
 export const getRxInputs = (classes) => {
     const rxInputs = new BehaviorSubject()
     const calculateRewards = (amtContribution = 0, amtPledge = 0, softCapReached, targetCapReached) => {
-        // let reward = amtContribution * .1
-        // if (amtPledge > 0) {
-        //     const totalCommitment = amtContribution + amtPledge
-        //     const ratio = amtPledge / amtContribution
-        //     reward = totalCommitment * (1 + ratio) * .1
-        // }
         let reward = amtContribution * BASE_REWARD + amtPledge * PLDEGE_REWARD
         if (targetCapReached) {
             reward *= 1.2
@@ -390,7 +408,8 @@ export const getRxInputs = (classes) => {
         pledgeIn?.onChange(getValues(inputs), inputs)
         return true
     }
-    const handleIdentityChange = (values, inputs) => {
+    const deferredPromise = PromisE.deferred()
+    const handleIdentityChange = async (values, inputs) => {
         const identity = values[inputNames.identity]
         const contributedIn = findInput(inputNames.amountContributed, inputs)
         const toContributeIn = findInput(inputNames.amountToContribute, inputs)
@@ -405,40 +424,40 @@ export const getRxInputs = (classes) => {
             text: textsCap.fetchingContributions,
         }
 
-        crowdloanHelper
-            .getUserContributions(identity)
-            .then(async (amountContributed) => {
-                contributedIn.value = amountContributed
-                // contributedIn.hidden = amountContributed <= 0
+        try {
+            const promise = crowdloanHelper.getUserContributions(identity)
+            const amountContributed = await deferredPromise(promise)
+            contributedIn.value = amountContributed
+            // contributedIn.hidden = amountContributed <= 0
 
-                // fetch existing amount pledged (if any)
-                const client = await getClient()
-                const { amountPledged = 0 } = amountContributed > 0
-                    && await client
-                        .crowdloan(identity)
-                        .catch(() => ({}))
-                    || {}
-                pledgeIn.value = amountPledged
-                toContributeIn.onChange(
-                    getValues(rxInputs.value),
-                    rxInputs.value,
-                )
-                identityIn.message = null
-                rxInputs.next([...rxInputs.value])
-            })
-            .catch(err => {
-                identityIn.message = {
-                    header: textsCap.errFetchContribution,
-                    icon: true,
-                    status: STATUS.error,
-                    text: `${err}`
+            // fetch existing amount pledged (if any)
+            const client = await getClient()
+            const { amountPledged = 0 } = amountContributed > 0
+                && await client
+                    .crowdloan(identity)
+                    .catch(() => ({}))
+                || {}
+            pledgeIn.value = amountPledged
+            pledgeIn.valueOld = amountPledged
+            toContributeIn.onChange(
+                getValues(rxInputs.value),
+                rxInputs.value,
+            )
+            identityIn.message = null
+            rxInputs.next([...rxInputs.value])
+        } catch (err) {
+            identityIn.message = {
+                header: textsCap.errFetchContribution,
+                icon: true,
+                status: STATUS.error,
+                text: `${err}`
 
-                }
-                rxInputs.next([...rxInputs.value])
-            })
+            }
+            rxInputs.next([...rxInputs.value])
+        }
         return true
     }
-    const handlePledgeChange = (values, inputs) => {
+    const handlePledgeChange = (values, inputs, input) => {
         const rewardsIn = findInput(inputNames.amountRewards, inputs)
         const pledgeIn = findInput(inputNames.amountPledged, inputs)
         const contributed = values[inputNames.amountContributed] || 0
@@ -447,6 +466,7 @@ export const getRxInputs = (classes) => {
             softCapReached,
             targetCapReached,
         } = values[inputNames.crowdloanStatus] || {}
+        const { value, valueOld } = pledgeIn
         const pledge = values[inputNames.amountPledged]
         const totalContribution = contributed + toContribute
         rewardsIn.hidden = !(totalContribution >= 5)
@@ -459,8 +479,10 @@ export const getRxInputs = (classes) => {
                 targetCapReached,
             )
         pledgeIn.color = pledgeIn.value > 0 && pledgeIn.max === pledgeIn.value
-            ? 'secondary'
-            : undefined
+            ? 'success'
+            : valueOld && valueOld > value
+                ? 'danger'
+                : undefined
         return true
     }
     const tokenInputProps = (ticker = blockchainHelper?.unit?.name || 'DOT') => ({
@@ -523,7 +545,10 @@ export const getRxInputs = (classes) => {
         },
         {
             disabled: true,
-            valueLabelDisplay: 'auto',
+            ignoredAttrs: [
+                ...FormInput.defaultProps.ignoredAttrs,
+                'valueOld',
+            ],
             label: `${textsCap.amtPlgLabel} (${blockchainHelper.unit.name})`,
             labelDetails: (
                 <div>
@@ -541,7 +566,38 @@ export const getRxInputs = (classes) => {
             onChange: handlePledgeChange,
             type: 'slider',
             value: 0,
+            valueLabelDisplay: 'auto',
             valueLabelFormat: value => Number(value.toFixed(2)),
+            validation: {
+                validate: (pledgeIn, inputs, values) => {
+                    const { value, valueOld = 0 } = pledgeIn
+                    const invalid = valueOld > 0 && valueOld > value
+
+                    // reset to previous pledged amount
+                    const resetValue = e => {
+                        e.preventDefault()
+                        pledgeIn.value = valueOld
+                        const values = getValues(inputs)
+                        // force re-validate input
+                        validateInput(pledgeIn, inputs, values)
+                        handlePledgeChange(values, inputs, pledgeIn)
+                        rxInputs.next([...inputs])
+                    }
+                    return invalid && (
+                        <>
+                            {textsCap.amtPlgInvalid + ' '}
+                            <a {...{
+                                className: classes.link,
+                                href: '#',
+                                onClick: resetValue,
+                                title: textsCap.amtPlgResetValue,
+                            }}>
+                                {valueOld} {blockchainHelper.unit.name}
+                            </a>
+                        </>
+                    )
+                }
+            }
         },
         {
             disabled: true,
@@ -549,13 +605,16 @@ export const getRxInputs = (classes) => {
             InputProps: tokenInputProps('KAPEX'),
             label: textsCap.amtRewardsLabel,
             labelDetails: (
-                <a
-                    className={classes.link}
-                    href='https://docs.totemaccounting.com/#/crowdloan/crowdloan-details?id=base-calculation'
-                    target='_blank'
-                >
-                    {textsCap.amtRewardsLabelDetails}
-                </a>
+                <>
+                    {textsCap.amtRewardsLabelDetails1}
+                    <a
+                        className={classes.link}
+                        href='https://docs.totemaccounting.com/#/crowdloan/crowdloan-details?id=base-calculation'
+                        target='_blank'
+                    >
+                        {textsCap.amtRewardsLabelDetails2}
+                    </a>
+                </>
             ),
             name: inputNames.amountRewards,
             type: 'number',
@@ -624,7 +683,7 @@ const handleError = (func, onFinally, modalId) => {
                         <Message {...{
                             content: (
                                 <>
-                                    {err?.subtitle && <small>{err?.subtitle}</small>}
+                                    <div>{err?.subtitle && <small>{err?.subtitle}</small>}</div>
                                     {err.message}
                                 </>
                             ),
@@ -654,7 +713,7 @@ const handleError = (func, onFinally, modalId) => {
  * 
  * @returns {Function}  
  */
-const handleSubmit = (rxInputs, setState) => async (_, values) => {
+const handleSubmit = (rxInputs, setState) => async (allOk, values, inputs, event) => {
     const client = await getClient()
     const identity = values[inputNames.identity]
     const identityObj = identityHelper.get(identity)
@@ -662,22 +721,13 @@ const handleSubmit = (rxInputs, setState) => async (_, values) => {
 
     const amountContributed = values[inputNames.amountContributed]
     const amountToContribute = values[inputNames.amountToContribute]
-    const sigantureProps = [
-        'amountContributed',
-        'amountPledged',
-        'amountToContribute',
-        'identity',
-        'totalContribution',
-        'userId'
-    ]
-    const contribution = objClean(
-        {
-            ...values,
-            totalContribution: amountContributed + amountToContribute,
-            userId: getUser()?.id,
-        },
-        sigantureProps,
-    )
+    const amountPledged = values[inputNames.amountPledged]
+    const entry = {
+        amountContributed: amountContributed + amountToContribute, // old + new
+        amountPledged,
+        identity,
+        userId: getUser().id,
+    }
 
     const modalId = 'submit'
     const state = { submitDisabled: true }
@@ -709,16 +759,18 @@ const handleSubmit = (rxInputs, setState) => async (_, values) => {
             text: textsCap.signDataMsg,
         })
         const signature = await identityHelper
-            .signature(identity, contribution)
-        // pre-validate
+            .signature(identity, entry)
+
+        // pre-validate data
         const valid = await identityHelper
             .signatureVerify(
-                contribution,
+                entry,
                 signature,
                 identity
             )
         if (!valid) throw new Error(textsCap.errSignature)
 
+        // set form status to loading to prevent re-submission until done
         state.loading = true
         setState(state)
 
@@ -754,8 +806,8 @@ const handleSubmit = (rxInputs, setState) => async (_, values) => {
 
         // store pledge data with signature to the messaging server
         await client
-            .crowdloan({ ...contribution, signature })
-            .catch(customError(textsCap.errPledgeSave))
+            .crowdloan({ ...entry, signature })
+            .catch(customError(textsCap.errPledgeSave, textsCap.errPledgeSaveSubtitle))
 
         // trigger identity onChange to update contributed amount
         const identityIn = findInput(inputNames.identity, rxInputs.value)

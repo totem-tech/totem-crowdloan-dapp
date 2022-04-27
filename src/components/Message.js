@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState } from 'react'
 import { Box, CircularProgress, colors, Typography } from '@mui/material';
 import { isStr } from '../utils/utils';
 import { CheckCircle, Error, HeartBroken, Info } from '@mui/icons-material';
@@ -64,9 +64,10 @@ export default function Message({ content, header, icon, id, status, style, text
                     borderRadius: 4,
                     margin: '10px 0',
                     maxWidth: '100%',
-                    minHeight: 60,
+                    minHeight: icon && 60 || undefined,
                     overflowX: 'auto',
                     padding: 10,
+                    position: 'relative',
                     whiteSpace: 'auto',
                     ...style,
                 },
@@ -82,7 +83,9 @@ export default function Message({ content, header, icon, id, status, style, text
                             : 7,
                     }
                 }}>
-                    <div><b>{header || ''}</b></div>
+                    <div>
+                        <b>{header || ''}</b>
+                    </div>
                     {text}
                 </Typography>
                 {!!icon && (

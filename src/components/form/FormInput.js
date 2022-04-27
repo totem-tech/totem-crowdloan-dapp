@@ -234,7 +234,7 @@ export default function FormInput(props) {
             break
     }
 
-    const msg = !!message?.text
+    const msg = message
         && (isFocused || !message.hideOnBlur)
         && (
             <Message {...{

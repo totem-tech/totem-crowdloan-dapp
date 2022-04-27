@@ -20,7 +20,7 @@ const [texts, textsCap] = translated({
     extensionAccessGuide2: 'click on "This can read and change site data"',
     extensionAccessGuide3: 'click on "On all sites"',
     hostAccessGuide: 'make sure the DApp has access to the extension',
-    hostAccessGuide1: 'open the extension',
+    hostAccessGuide1: 'open the extension by clicking on the icon:',
     hostAccessGuide2: 'click on the settings icon',
     hostAccessGuide3: 'click on "Manage Website Access"',
     hostAccessGuide4: 'enable access for for the following URL:',
@@ -34,6 +34,10 @@ const [texts, textsCap] = translated({
     warnSafari3: 'Chrome, Firefox or any Chromium based browser',
     warnInjectionFailed: 'could not access PolkadotJS Extension! Please install and enable the browser extension from here:',
 }, true)
+
+const images = {
+    extensionLogo: 'images/polkadot-extension.svg'
+}
 
 // Enable polkadotJS extension
 export const enableExtionsion = async () => {
@@ -88,6 +92,14 @@ export const checkExtenstion = deferred((rxInputs, classes) => {
             </div>
         )
     } else {
+        const openExtension = (
+            <>
+                {textsCap.hostAccessGuide1} <img src={images.extensionLogo} style={{
+                    width: 20,
+                    verticalAlign: 'middle',
+                }} />
+            </>
+        )
         const guides = [
             {
                 content: (
@@ -109,7 +121,7 @@ export const checkExtenstion = deferred((rxInputs, classes) => {
             {
                 content: (
                     <OL items={[
-                        textsCap.hostAccessGuide1,
+                        openExtension,
                         <>
                             {textsCap.hostAccessGuide2 + ' '}
                             (<Settings style={{
@@ -129,7 +141,7 @@ export const checkExtenstion = deferred((rxInputs, classes) => {
             {
                 content: (
                     <OL items={[
-                        textsCap.hostAccessGuide1,
+                        openExtension,
                         <>
                             {textsCap.identityAccessGuide2 + ' '}
                             (<MoreVert style={{
@@ -144,6 +156,17 @@ export const checkExtenstion = deferred((rxInputs, classes) => {
                 ),
                 title: textsCap.identityAccessGuide,
             },
+        ]
+        const guidesMobile = [
+            {
+                conent: (
+                    <>
+
+                        Transfer DOT into your Totem identity.
+                    </>
+                ),
+                title: 'How to use Totem identity to participate in the crowdloan?'
+            }
         ]
         error = isMobile
             ? (
@@ -179,13 +202,15 @@ export const checkExtenstion = deferred((rxInputs, classes) => {
                     {error}
                     <br />
                     {textsCap.alternatively} (<b>{textsCap.notRecommended}</b>)
+                    {/* <br />
+                    {isMobile && <AccordionGroup items={guidesMobile} />} */}
                 </div>
             ),
         }
     rxInputs.next(rxInputs.value)
 }, 300)
 
-const AccordionGroup = ({ items = [] }) => {
+export const AccordionGroup = ({ items = [] }) => {
     const [expanded, setExpanded] = useState(() => {
         const index = (items.findIndex(({ expanded }) => !!expanded) || 0)
         return items?.[index]?.title
