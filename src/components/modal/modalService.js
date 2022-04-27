@@ -130,7 +130,7 @@ export class ModalService {
      * 
      * @param   {String} id
      */
-    delete = id => this.show(null, id)
+    delete = id => this.rxModals.value.get(id) && this.show(null, id)
 
     info = (confirmProps = {}, id) => {
         confirmProps.confirmButton = null

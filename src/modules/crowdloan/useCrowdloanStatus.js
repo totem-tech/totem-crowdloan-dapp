@@ -59,14 +59,19 @@ export default function useCrowdloanStatus(crowdloanHelper, softCap, targetCap, 
                     && amountRaised < hardCap,
                 amountRaised,
                 hardCap,
-                hardCapReached: isValid && amountRaised >= hardCap,
+                hardCapReached: isValid
+                    && amountRaised >= hardCap,
                 isValid,
                 pledgeCap,
                 pledgeCapReached,
                 softCap,
-                softCapReached: isValid && isValidNumber(softCap) && amountRaised >= softCap,
+                softCapReached: isValid
+                    && isValidNumber(softCap)
+                    && amountRaised >= softCap,
                 targetCap,
-                targetCapReached: isValid && isValidNumber(targetCap) && amountRaised >= targetCap,
+                targetCapReached: isValid
+                    && isValidNumber(targetCap)
+                    && amountRaised >= targetCap,
             }
 
             if (JSON.stringify(status) === JSON.stringify(_status)) return
