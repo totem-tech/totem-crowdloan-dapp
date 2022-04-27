@@ -16,7 +16,7 @@ const [texts, textsCap] = translated({
     alternatively: 'alternatively, you can continue using the DApp with your localy stored Totem identities',
     guidesTitle: 'if you have already installed the extension please try the following instructions:',
     extensionAccessGuide: 'make sure extension is enabled for this site',
-    extensionAccessGuide1: 'right click on the PolkadotJS extension icon on the top right side of the browser address bar',
+    extensionAccessGuide1: 'right click on the PolkadotJS extension icon on the top right side of the browser address bar:',
     extensionAccessGuide2: 'click on "This can read and change site data"',
     extensionAccessGuide3: 'click on "On all sites"',
     hostAccessGuide: 'make sure the DApp has access to the extension',
@@ -94,7 +94,8 @@ export const checkExtenstion = deferred((rxInputs, classes) => {
     } else {
         const openExtension = (
             <>
-                {textsCap.hostAccessGuide1} <img src={images.extensionLogo} style={{
+                {textsCap.hostAccessGuide1 + ' '}
+                <img src={images.extensionLogo} style={{
                     width: 20,
                     verticalAlign: 'middle',
                 }} />
@@ -104,14 +105,23 @@ export const checkExtenstion = deferred((rxInputs, classes) => {
             {
                 content: (
                     <OL items={[
-                        textsCap.extensionAccessGuide1,
+                        <>
+                            {textsCap.extensionAccessGuide1 + ' '}
+                            <img
+                                src={images.extensionLogo}
+                                style={{
+                                    width: 20,
+                                    verticalAlign: 'middle',
+                                }}
+                            />
+                        </>,
                         <>
                             {textsCap.extensionAccessGuide2 + ' '}
-                            (<MoreVert style={{
+                            {/* (<MoreVert style={{
                                 fontSize: 23,
                                 padding: 0,
                                 margin: '0 0 -7px 0',
-                            }} />)
+                            }} />) */}
                         </>,
                         textsCap.extensionAccessGuide3,
                     ]} />
@@ -157,17 +167,17 @@ export const checkExtenstion = deferred((rxInputs, classes) => {
                 title: textsCap.identityAccessGuide,
             },
         ]
-        const guidesMobile = [
-            {
-                conent: (
-                    <>
+        // const guidesMobile = [
+        //     {
+        //         conent: (
+        //             <>
 
-                        Transfer DOT into your Totem identity.
-                    </>
-                ),
-                title: 'How to use Totem identity to participate in the crowdloan?'
-            }
-        ]
+        //                 Transfer DOT into your Totem identity.
+        //             </>
+        //         ),
+        //         title: 'How to use Totem identity to participate in the crowdloan?'
+        //     }
+        // ]
         error = isMobile
             ? (
                 <>
