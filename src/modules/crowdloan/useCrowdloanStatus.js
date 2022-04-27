@@ -69,7 +69,7 @@ export default function useCrowdloanStatus(crowdloanHelper, softCap, targetCap, 
                 targetCapReached: isValid && isValidNumber(targetCap) && amountRaised >= targetCap,
             }
 
-            if (!mounted || JSON.stringify(status) === JSON.stringify(_status)) return
+            if (JSON.stringify(status) === JSON.stringify(_status)) return
 
             status = _status
             setState({ status })
