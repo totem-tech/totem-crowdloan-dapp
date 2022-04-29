@@ -1,12 +1,16 @@
 import React, { useEffect, useState } from 'react'
 import { BehaviorSubject } from 'rxjs'
 import { getClient, rxIsConnected } from '../../utils/chatClient'
+import { translated } from '../../utils/languageHelper'
 import { subjectAsPromise, unsubscribe } from '../../utils/reactHelper'
 import CrowdloanHelper from '../../utils/substrate/CrowdloanHelper'
 import { deferred, isBool, isValidNumber } from '../../utils/utils'
 import blockchainHelper, { crowdloanActive } from '../blockchain/'
 
 const rxPledgeTotal = new BehaviorSubject(0)
+const textsCap = translated({
+    unexpectedError: 'unexpected error occured:'
+}, true)[1]
 /**
  * @name    useCrowdloanStatus
  * @summary React hook to get the current status of a parachain
@@ -25,7 +29,14 @@ export default function useCrowdloanStatus(crowdloanHelper, softCap, targetCap, 
     useEffect(() => {
         let mounted = true
         const unsub = {}
-        let amountRaised, currentBlock, endBlock, hardCap, isValid, pledgeCapReached, status
+        let amountPledged,
+            amountRaised,
+            currentBlock,
+            endBlock,
+            hardCap,
+            isValid,
+            pledgeCapReached,
+            status
         const subscribe = async () => {
             unsub.block = await blockchainHelper.getCurrentBlock(block => {
                 currentBlock = block
@@ -40,6 +51,7 @@ export default function useCrowdloanStatus(crowdloanHelper, softCap, targetCap, 
                 updateStatus()
             })
             unsub.pledgedTotal = rxPledgeTotal.subscribe(value => {
+                amountPledged = value
                 pledgeCapReached = !!pledgeCap && value >= pledgeCap
                 updateStatus()
             })
@@ -56,6 +68,7 @@ export default function useCrowdloanStatus(crowdloanHelper, softCap, targetCap, 
                     && isValid
                     && currentBlock < endBlock
                     && amountRaised < hardCap,
+                amountPledged,
                 amountRaised,
                 hardCap,
                 hardCapReached: isValid
@@ -82,7 +95,7 @@ export default function useCrowdloanStatus(crowdloanHelper, softCap, targetCap, 
             .catch(err =>
                 mounted
                 && setState({
-                    error: `${err}`.replace('Error: ', ''),
+                    error: `${textsCap.unexpectedError} ${err}`.replace('Error: ', ''),
                     loading: false,
                 })
             )

@@ -43,6 +43,7 @@ const PLDEGE_REWARD = 0.32
 const TOTEM_APP_URL = process.env.REACT_APP_TOTEM_APP_URL
 const [texts, textsCap] = translated({
     amtContdLabel: 'amount already contributed',
+    amountPledged: 'amount pledged',
     amtPlgCapReachedMsg: 'We have reached the pledge cap. You can continue to make new contributions until hard cap is reached and crowdloan is active. However, you will not be able to update the pledge amount.',
     amtPlgCapReachedTitle: 'pledge cap reached!',
     amtPlgInvalid: 'please enter an amount greater or equal to your previously pledged amount',
@@ -140,7 +141,7 @@ export default function CrowdloanForm(props) {
     const initModalId = 'init'
 
     // useEffect(() => {
-    if (!!statusIn.value) modalService.delete(initModalId)
+    if (!!statusIn.value || !!error) modalService.delete(initModalId)
     // }, [statusIn.value])
 
     useEffect(() => {
@@ -276,6 +277,15 @@ export default function CrowdloanForm(props) {
                                 verticalAlign: 'middle',
                             }} />
                     ),
+                }
+            } else {
+                pledgeIn.message = status.amountPledged && {
+                    content: (
+                        <strong style={{ color: 'deeppink' }}>
+                            {textsCap.amountPledged}: {shorten(status.amountPledged, 2)} {blockchainHelper.unit.name}
+                        </strong>
+                    ),
+                    style: { margin: 0 },
                 }
             }
             // trigger an update on the pledge input which will update the calculated rewards

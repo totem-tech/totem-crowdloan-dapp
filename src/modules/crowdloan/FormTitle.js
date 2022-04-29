@@ -124,6 +124,11 @@ function CrowdloanStatusSteps({ status }) {
                     <center>
                         <strong>
                             {textsCap.amountRaised}: {shorten(amountRaised, 2)} {ticker}
+                            {/* {amountPledged && (
+                                <div>
+                                    {textsCap.amountPledged}: {shorten(amountPledged, 2)} {ticker}
+                                </div>
+                            )} */}
                         </strong>
                     </center>
                 </div>
