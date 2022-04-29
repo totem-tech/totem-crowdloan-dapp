@@ -790,7 +790,7 @@ const handleSubmit = (rxInputs, setState) => async (allOk, values, inputs, event
             text: textsCap.signTxMsg,
         })
         // execute the contribution transaction
-        const [blockHash] = await blockchainHelper
+        const [blockHash, eventErrors, txResult] = await blockchainHelper
             .signAndSend(
                 identity,
                 'api.tx.crowdloan.contribute',
@@ -806,7 +806,12 @@ const handleSubmit = (rxInputs, setState) => async (allOk, values, inputs, event
 
         // store pledge data with signature to the messaging server
         await client
-            .crowdloan({ ...entry, signature })
+            .crowdloan({
+                ...entry,
+                blockHash,
+                blockIndex: txResult.status.index,
+                signature,
+            })
             .catch(customError(textsCap.errPledgeSave, textsCap.errPledgeSaveSubtitle))
 
         // trigger identity onChange to update contributed amount
