@@ -279,7 +279,6 @@ export default function CrowdloanForm(props) {
                     ),
                 }
             } else {
-                console.log({ status })
                 pledgeIn.message = {
                     content: (
                         <strong style={{ color: 'deeppink' }}>
