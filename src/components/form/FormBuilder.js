@@ -9,6 +9,11 @@ import { toProps } from '../reactUtils'
 import modalService from '../modal/modalService'
 import FormInput from './FormInput'
 import { findInput, getValues, validateInput } from './InputCriteriaHint'
+import { translated } from '../../utils/languageHelper'
+
+const textsCap = translated({
+    submit: 'submit'
+}, true)[1]
 
 const attachName = inputs => {
     const values = getValues(inputs)
@@ -22,6 +27,8 @@ const attachName = inputs => {
 }
 export default function FormBuilder(props) {
     let {
+        buttonAfter,
+        buttonBefore,
         closeOnSubmit,
         formProps,
         hiddenInputs = [],
@@ -136,6 +143,7 @@ export default function FormBuilder(props) {
                     padding: '15px 0 10px 0',
                     textAlign: 'right',
                 }}>
+                    {buttonBefore}
                     <Button {...{
                         disabled: submitDisabled,
                         variant: 'contained',
@@ -144,6 +152,7 @@ export default function FormBuilder(props) {
                         onClick: handleSubmit,
                         ...toProps(submitButton),
                     }} />
+                    {buttonAfter}
                 </div>
             )}
 
@@ -152,7 +161,7 @@ export default function FormBuilder(props) {
     )
 }
 FormBuilder.defaultProps = {
-    submitButton: 'Submit',
+    submitButton: textsCap.submit,
 }
 
 /**

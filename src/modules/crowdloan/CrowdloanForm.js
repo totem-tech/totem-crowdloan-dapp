@@ -62,7 +62,7 @@ const [texts, textsCap] = translated({
     contributed: 'contributed',
     contributeTo: 'contribute to',
     copiedRefLink: 'referral link is copied to the clipboard',
-    copyRefLink: 'copy your referral link',
+    copyRefLink: 'copy referral link',
     crowdloan: 'crowdloan',
     enterAnAmount: 'enter an amount',
     errAccount1: 'in order to contribute to the Totem KAPEX Parachain Crowdloan, you must create a Totem account.',
@@ -302,6 +302,16 @@ export default function CrowdloanForm(props) {
         <FormBuilder {...{
             ...props,
             ...state,
+            buttonBefore: (
+                <Button {...{
+                    color: 'success',
+                    onClick: handleCopyReferralUrl,
+                    style: { marginRight: 5 },
+                    variant: 'outlined',
+                }}>
+                    <ContentCopy /> {textsCap.copyRefLink}
+                </Button>
+            ),
             formProps: {
                 className: classes.root,
             },
@@ -606,7 +616,7 @@ export const getRxInputs = (classes) => {
             label: textsCap.amtRewardsLabel,
             labelDetails: (
                 <>
-                    {textsCap.amtRewardsLabelDetails1}
+                    {textsCap.amtRewardsLabelDetails1 + ' '}
                     <a
                         className={classes.link}
                         href='https://docs.totemaccounting.com/#/crowdloan/crowdloan-details?id=base-calculation'
@@ -631,22 +641,29 @@ export const getRxInputs = (classes) => {
  * 
  * @param   {*} event
  */
-const handleCopyReferralUrl = event => {
-    event.preventDefault()
-
-    const { id } = getUser()
-    const url = `${TOTEM_APP_URL}?ref=${id}`
-    window.navigator.clipboard.writeText(url)
+const handleCopyReferralUrl = (() => {
     const modalId = 'referral-link'
-    modalService.showCompact({
-        content: (
-            <div style={{ padding: 10 }}>
-                <ContentCopy /> {textsCap.copiedRefLink}
-            </div>
-        ),
-    }, modalId)
-    setTimeout(() => modalService.delete(modalId), 2000)
-}
+    const handleCloseModal = async () => {
+        await PromisE.delay(2000)
+        modalService.delete(modalId)
+    }
+    const defferedPromise = PromisE.deferred()
+    return event => {
+        event.preventDefault()
+
+        const { id } = getUser()
+        const url = `${TOTEM_APP_URL}?ref=${id}`
+        window.navigator.clipboard.writeText(url)
+        modalService.showCompact({
+            content: (
+                <div style={{ padding: 10 }}>
+                    <ContentCopy /> {textsCap.copiedRefLink}
+                </div>
+            ),
+        }, modalId)
+        defferedPromise(handleCloseModal)
+    }
+})()
 
 /**
  * @name    handleError
