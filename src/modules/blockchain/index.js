@@ -4,7 +4,7 @@ import CrowdloanHelper from '../../utils/substrate/CrowdloanHelper'
 
 const textsCap = translated({
     blockchainNetwork: 'Blockchain Network',
-    dappSubtitle: 'Parachain Crowdloan DApp',
+    dappSubtitle: 'Crowdloan DApp',
     unnamed: 'unnamed',
 }, true)[1]
 export const BlockchainHelper = _BlockchainHelper
@@ -37,6 +37,6 @@ const blockchainHelper = new _BlockchainHelper(
 export const crowdloanHelper = new CrowdloanHelper(
     blockchainHelper,
     parachainId,
-    `${dappTitle} ${textsCap.dappSubittle}`,
+    `${dappTitle} ${textsCap.dappSubitle}`,
 )
 export default blockchainHelper
