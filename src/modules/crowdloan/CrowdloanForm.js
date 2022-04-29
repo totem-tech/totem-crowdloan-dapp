@@ -20,6 +20,7 @@ import { useRxSubject } from '../../utils/reactHelper'
 import identityHelper from '../../utils/substrate/identityHelper'
 import {
     arrSort,
+    deferred,
     isError,
     isFn,
     objToUrlParams,
@@ -643,11 +644,7 @@ export const getRxInputs = (classes) => {
  */
 const handleCopyReferralUrl = (() => {
     const modalId = 'referral-link'
-    const handleCloseModal = async () => {
-        await PromisE.delay(2000)
-        modalService.delete(modalId)
-    }
-    const defferedPromise = PromisE.deferred()
+    const handleCloseModal = deferred(() => modalService.delete(modalId), 2000)
     return event => {
         event.preventDefault()
 
@@ -657,11 +654,11 @@ const handleCopyReferralUrl = (() => {
         modalService.showCompact({
             content: (
                 <div style={{ padding: 10 }}>
-                    <ContentCopy /> {textsCap.copiedRefLink}
+                    <ContentCopy style={{ verticalAlign: 'middle' }} /> {textsCap.copiedRefLink}
                 </div>
             ),
         }, modalId)
-        defferedPromise(handleCloseModal)
+        handleCloseModal()
     }
 })()
 
