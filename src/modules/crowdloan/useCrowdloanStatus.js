@@ -51,15 +51,19 @@ export default function useCrowdloanStatus(crowdloanHelper, softCap, targetCap, 
                 updateStatus()
             })
             unsub.pledgedTotal = rxPledgeTotal.subscribe(value => {
+                value = value || 0
                 amountPledged = value
                 pledgeCapReached = !!pledgeCap && value >= pledgeCap
                 updateStatus()
             })
         }
         const updateStatus = deferred(() => {
-            const allReceived = [amountRaised, currentBlock, endBlock]
-                .every(isValidNumber)
-                && isBool(pledgeCapReached)
+            const allReceived = [
+                amountPledged,
+                amountRaised,
+                currentBlock,
+                endBlock,
+            ].every(isValidNumber)
             // skip if not all values retrieved
             if (!allReceived) return
 

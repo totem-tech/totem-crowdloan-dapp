@@ -43,7 +43,7 @@ const PLDEGE_REWARD = 0.32
 const TOTEM_APP_URL = process.env.REACT_APP_TOTEM_APP_URL
 const [texts, textsCap] = translated({
     amtContdLabel: 'amount already contributed',
-    amountPledged: 'amount pledged',
+    amountPledged: 'total amount pledged',
     amtPlgCapReachedMsg: 'We have reached the pledge cap. You can continue to make new contributions until hard cap is reached and crowdloan is active. However, you will not be able to update the pledge amount.',
     amtPlgCapReachedTitle: 'pledge cap reached!',
     amtPlgInvalid: 'please enter an amount greater or equal to your previously pledged amount',
