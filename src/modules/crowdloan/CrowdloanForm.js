@@ -279,7 +279,8 @@ export default function CrowdloanForm(props) {
                     ),
                 }
             } else {
-                pledgeIn.message = status.amountPledged && {
+                console.log({ status })
+                pledgeIn.message = {
                     content: (
                         <strong style={{ color: 'deeppink' }}>
                             {textsCap.amountPledged}: {shorten(status.amountPledged, 2)} {blockchainHelper.unit.name}
