@@ -39,6 +39,7 @@ import FormInput from '../../components/form/FormInput'
 const BASE_REWARD = 0.1
 const PLEDGE_PERCENTAGE = 1 // 100%
 const PLDEGE_REWARD = 0.32
+const TOTEM_APP_URL = process.env.REACT_APP_TOTEM_APP_URL
 const [texts, textsCap] = translated({
     amtContdLabel: 'amount already contributed',
     amtPlgCapReachedMsg: 'We have reached the pledge cap. You can continue to make new contributions until hard cap is reached and crowdloan is active. However, you will not be able to update the pledge amount.',
@@ -155,8 +156,7 @@ export default function CrowdloanForm(props) {
         const initialize = async () => {
             const { id } = getUser() || {}
             const redirectTo = window.location.href
-            const appUrl = process.env.REACT_APP_TOTEM_APP_URL
-            const getUrl = (params = {}) => `${appUrl}?${objToUrlParams(params)}`
+            const getUrl = (params = {}) => `${TOTEM_APP_URL}?${objToUrlParams(params)}`
 
             const urlCreate = getUrl({ form: 'registration', redirectTo })
             const urlRestore = getUrl({ form: 'restore', redirectTo })
@@ -635,7 +635,7 @@ const handleCopyReferralUrl = event => {
     event.preventDefault()
 
     const { id } = getUser()
-    const url = `${window.location.href}?ref=${id}`
+    const url = `${TOTEM_APP_URL}?ref=${id}`
     window.navigator.clipboard.writeText(url)
     const modalId = 'referral-link'
     modalService.showCompact({
