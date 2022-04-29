@@ -37,6 +37,6 @@ const blockchainHelper = new _BlockchainHelper(
 export const crowdloanHelper = new CrowdloanHelper(
     blockchainHelper,
     parachainId,
-    `${dappTitle} ${textsCap.dappSubitle}`,
+    `${dappTitle} ${textsCap.dappSubtitle}`,
 )
 export default blockchainHelper
