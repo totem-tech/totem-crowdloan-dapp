@@ -73,7 +73,8 @@ const [texts, textsCap] = translated({
     errAccount4: 'restore account',
     errAmtMax: 'please enter an amount smaller than, or equal to',
     errAmtMin: 'please enter a number greater than',
-    errBackup: 'to safeguard your account please click here to download a backup of your Totem account',
+    errBackup: 'To safeguard your account please click here to download a backup of your Totem account.',
+    errBackup2: 'Please read & follow instructions to confirm the backup by first downloading and then uploding the downloaded file. Uploaded file will not be sent anywhere outside of this browser.',
     errBlockchainConnection: 'failed to connect to blockchain',
     errCrowdloanEnded: 'crowdloan has ended',
     errCrowdloanEndedDetails: 'you can no longer make new contributions',
@@ -201,6 +202,9 @@ export default function CrowdloanForm(props) {
                             <a className={classes.link} href={backupUrl}>
                                 {textsCap.errBackup}
                             </a>
+                            <br />
+                            <br />
+                            <div>{textsCap.errBackup2}</div>
                         </div>
                     )
                 }
