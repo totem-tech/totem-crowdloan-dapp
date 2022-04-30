@@ -1,5 +1,5 @@
 import React from 'react'
-import CrowdloanForm from './modules/crowdloan/CrowdloanForm'
+import CrowdloanForm, { elHowToVid } from './modules/crowdloan/CrowdloanForm'
 import ModalsContainer from './components/modal/ModalsContainer'
 import modalService from './components/modal/modalService'
 

@@ -85,6 +85,7 @@ const [texts, textsCap] = translated({
     errSignature: 'signature pre-validation failed',
     errTxFailed: 'transaction failed',
     fetchingContributions: 'checking existing contributions...',
+    howToVideo: 'Watch our "how to contribute" video',
     idLabel: 'select your blockchain identity',
     idPlaceholder: 'select a blockchain identity',
     invite1: 'why not invite your friends to Totem?',
@@ -105,6 +106,7 @@ const [texts, textsCap] = translated({
     txInProgress: 'transaction in-progress',
     txStatus: 'transaction status',
     updatePledge: 'update pledge',
+    viewSource: 'view source code',
     viewTransaction: 'view transaction',
 }, true)
 
@@ -123,6 +125,19 @@ export const inputNames = {
     title: 'title',
 }
 
+export const elHowToVid = (
+    <div style={{ textAlign: 'center' }}>
+        <Button {...{
+            // color: 'success',
+            // Component: 'a',
+            href: 'https://www.youtube.com/watch?v=qBLskkm0iDk',
+            target: '_blank',
+            variant: 'outlined',
+        }}>
+            {textsCap.howToVideo} <OpenInNew />
+        </Button>
+    </div>
+)
 export default function CrowdloanForm(props) {
     const classes = useStyles()
     const [state, setState] = useState({
@@ -187,6 +202,9 @@ export default function CrowdloanForm(props) {
                         <br />
                         {textsCap.errAccount3 + ' '}
                         <a href={urlRestore}>{textsCap.errAccount4}</a>
+                        <br />
+                        <br />
+                        {elHowToVid}
                     </div>
                 )
             }
@@ -215,6 +233,9 @@ export default function CrowdloanForm(props) {
                             <br />
                             <br />
                             <div>{textsCap.errBackup2}</div>
+                            <br />
+                            <br />
+                            {elHowToVid}
                         </div>
                     )
                 }
@@ -328,17 +349,31 @@ export default function CrowdloanForm(props) {
         <FormBuilder {...{
             ...props,
             ...state,
-            buttonBefore: (
-                <>
+            buttonAfter: (
+                <div style={{ marginTop: 30, textAlign: 'center' }}>
                     <Button {...{
                         color: 'success',
                         onClick: handleCopyReferralUrl,
-                        style: { marginRight: 5 },
+                        style: { margin: '5px 0' },
                         variant: 'outlined',
                     }}>
                         <ContentCopy /> {textsCap.copyRefLink}
                     </Button>
 
+                    {elHowToVid}
+
+                    <Button {...{
+                        href: 'https://gitlab.com/totem-tech/totem-crowdloan-dapp',
+                        style: { marginTop: 5 },
+                        target: '_blank',
+                        variant: 'outlined',
+                    }}>
+                        {textsCap.viewSource} <OpenInNew />
+                    </Button>
+                </div>
+            ),
+            buttonBefore: (
+                <>
                     {allowPledgeOnly && (
                         <Button {...{
                             color: 'deeppink',
@@ -921,7 +956,7 @@ const handleSubmitCb = (rxInputs, setState) => async (_, values) => {
                                 target: '_blank',
                                 variant: 'outlined',
                             }}>
-                                <OpenInNew /> {textsCap.viewTransaction}
+                                {textsCap.viewTransaction} <OpenInNew />
                             </Button>
                             <br />
                             <br />
