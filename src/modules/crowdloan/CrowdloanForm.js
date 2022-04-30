@@ -80,6 +80,7 @@ const [texts, textsCap] = translated({
     errCrowdloanEndedDetails: 'you can no longer make new contributions',
     errFetchContribution: 'failed to retrieve previous contributions',
     errPledgeSave: 'failed to store contribution data',
+    errPledgeOnlySave: 'failed to update pledge data',
     errPledgeSaveSubtitle: 'Your contribution was successful. However, the request to store your contribution and pledge data on our database failed! Please check the error message below:',
     errSignature: 'signature pre-validation failed',
     errTxFailed: 'transaction failed',
@@ -96,13 +97,15 @@ const [texts, textsCap] = translated({
     signTxMsg: 'please approve to sign the transaction using your extension identity',
     signDataMsg: 'please approve to sign a message using your extension identity',
     submit: 'contribute',
-    transactionCompleted: 'transaction completed successfully.',
+    pledgeUpdated: 'your pledged amount has been updated successsfully!',
+    transactionCompleted: 'transaction completed successfully!',
     txSuccessMsg: 'thank you for contributing!',
     txSuccessMsg2: 'return anytime to contribute more.',
     transactionMsg: 'Please click Contribute to approve your contribution transaction for the Totem KAPEX Parachain Crowdloan on the Polkadot Relay Chain. Once this transaction is completed your funds will be locked for the duration of the crowdloan (96 weeks). This action is irreversible. Please do not close window until you see a transaction confirmation message.',
     txInProgress: 'transaction in-progress',
     txStatus: 'transaction status',
-    viewTransaction: 'view transaction'
+    updatePledge: 'update pledge',
+    viewTransaction: 'view transaction',
 }, true)
 
 const logos = {
@@ -138,8 +141,15 @@ export default function CrowdloanForm(props) {
         pledgeCap,
     )
     const statusIn = findInput(inputNames.crowdloanStatus, inputs) || {}
+    const amountToContribute = findInput(inputNames.amountToContribute, inputs).value
+    const amountContributed = findInput(inputNames.amountContributed, inputs).value
+    const pledgeIn = findInput(inputNames.amountPledged, inputs)
     const { active, isValid } = statusIn.value || {}
     const initModalId = 'init'
+    const allowPledgeOnly = !!active
+        && amountContributed >= 5
+        && !amountToContribute
+        && pledgeIn.value > (pledgeIn.valueOld || 0)
 
     // useEffect(() => {
     if (!!statusIn.value || !!error) modalService.delete(initModalId)
@@ -313,19 +323,37 @@ export default function CrowdloanForm(props) {
         : state.error
     if (error) return <Message {...error} />
 
+    const handleSubmit = handleSubmitCb(rxInputs, s => setState({ ...s }))
     return (
         <FormBuilder {...{
             ...props,
             ...state,
             buttonBefore: (
-                <Button {...{
-                    color: 'success',
-                    onClick: handleCopyReferralUrl,
-                    style: { marginRight: 5 },
-                    variant: 'outlined',
-                }}>
-                    <ContentCopy /> {textsCap.copyRefLink}
-                </Button>
+                <>
+                    <Button {...{
+                        color: 'success',
+                        onClick: handleCopyReferralUrl,
+                        style: { marginRight: 5 },
+                        variant: 'outlined',
+                    }}>
+                        <ContentCopy /> {textsCap.copyRefLink}
+                    </Button>
+
+                    {allowPledgeOnly && (
+                        <Button {...{
+                            color: 'deeppink',
+                            disabled: false,
+                            children: textsCap.updatePledge,
+                            onClick: () => handleSubmit(
+                                true,
+                                getValues(inputs),
+                                inputs,
+                                {},
+                            ),
+                            variant: 'outlined',
+                        }} />
+                    )}
+                </>
             ),
             formProps: {
                 className: classes.root,
@@ -336,12 +364,21 @@ export default function CrowdloanForm(props) {
                 // show contributed only after crowdloan is finished
                 (!isValid || active) && inputNames.amountContributed,
             ].filter(Boolean),
-            onSubmit: handleSubmit(rxInputs, s => setState({ ...s })),
+            onSubmit: handleSubmit,
             rxInputs,
             // hide submit button when not active
             submitButton: !active
                 ? null
-                : textsCap.submit,
+                : {
+                    children: textsCap.submit,
+                    style: allowPledgeOnly
+                        ? {
+                            position: 'fixed',
+                            left: -1000,
+                            top: -1000,
+                        }
+                        : undefined,
+                },
         }} />
     )
 }
@@ -741,15 +778,20 @@ const handleError = (func, onFinally, modalId) => {
  * 
  * @returns {Function}  
  */
-const handleSubmit = (rxInputs, setState) => async (allOk, values, inputs, event) => {
+const handleSubmitCb = (rxInputs, setState) => async (_, values) => {
     const client = await getClient()
     const identity = values[inputNames.identity]
     const identityObj = identityHelper.get(identity)
     if (!identityObj) return
 
     const amountContributed = values[inputNames.amountContributed]
-    const amountToContribute = values[inputNames.amountToContribute]
+    const amountToContribute = values[inputNames.amountToContribute] || 0
     const amountPledged = values[inputNames.amountPledged]
+    const pledgeOnly = amountContributed > 5 && !amountToContribute
+    console.log({
+        amountContributed,
+        amountToContribute
+    })
     const entry = {
         amountContributed: amountContributed + amountToContribute, // old + new
         amountPledged,
@@ -805,7 +847,7 @@ const handleSubmit = (rxInputs, setState) => async (allOk, values, inputs, event
         // keep track of and display transaction status
         const rxUpdater = new BehaviorSubject({ status: { type: 'Initiating' } })
         unsubscribe = rxUpdater.subscribe(result => {
-            showMessage({
+            !pledgeOnly && showMessage({
                 header: textsCap.txInProgress,
                 icon: true,
                 status: STATUS.loading,
@@ -818,29 +860,38 @@ const handleSubmit = (rxInputs, setState) => async (allOk, values, inputs, event
             text: textsCap.signTxMsg,
         })
         // execute the contribution transaction
-        const [blockHash, eventErrors, txResult] = await blockchainHelper
-            .signAndSend(
-                identity,
-                'api.tx.crowdloan.contribute',
-                [
-                    crowdloanHelper.parachainId,
-                    amountToContribute * blockchainHelper.unit.amount,
-                    undefined, // required
-                ],
-                rxUpdater,
-                signer
-            )
-            .catch(customError(textsCap.errTxFailed))
+        const [blockHash, eventErrors, txResult] = pledgeOnly
+            ? []
+            : await blockchainHelper
+                .signAndSend(
+                    identity,
+                    'api.tx.crowdloan.contribute',
+                    [
+                        crowdloanHelper.parachainId,
+                        amountToContribute * blockchainHelper.unit.amount,
+                        undefined, // required
+                    ],
+                    rxUpdater,
+                    signer
+                )
+                .catch(customError(textsCap.errTxFailed))
 
         // store pledge data with signature to the messaging server
         await client
             .crowdloan({
                 ...entry,
                 blockHash,
-                blockIndex: txResult.status.index,
+                blockIndex: pledgeOnly
+                    ? undefined
+                    : txResult.status.index,
                 signature,
             })
-            .catch(customError(textsCap.errPledgeSave, textsCap.errPledgeSaveSubtitle))
+            .catch(customError(
+                pledgeOnly
+                    ? textsCap.errPledgeOnlySave
+                    : textsCap.errPledgeSave,
+                !pledgeOnly && textsCap.errPledgeSaveSubtitle,
+            ))
 
         // trigger identity onChange to update contributed amount
         const identityIn = findInput(inputNames.identity, rxInputs.value)
@@ -852,48 +903,54 @@ const handleSubmit = (rxInputs, setState) => async (allOk, values, inputs, event
         // delay to prevent message being overriden by status message
         setTimeout(() => {
             showMessage({
-                header: textsCap.transactionCompleted,
+                header: pledgeOnly
+                    ? textsCap.pledgeUpdated
+                    : textsCap.transactionCompleted,
                 icon: true,
                 status: STATUS.success,
-                text: (
-                    <div>
-                        {textsCap.txSuccessMsg} {textsCap.txSuccessMsg2}
-                        <br />
-                        <Button {...{
-                            color: 'success',
-                            // Component: 'a',
-                            href: explorerUrl,
-                            target: '_blank',
-                            variant: 'outlined',
-                        }}>
-                            <OpenInNew /> {textsCap.viewTransaction}
-                        </Button>
-                        <br />
-                        <br />
-                        {textsCap.invite1} {textsCap.invite2}
-                        <br />
-                        <Button {...{
-                            color: 'success',
-                            onClick: handleCopyReferralUrl,
-                            variant: 'outlined',
-                        }}>
-                            <ContentCopy /> {textsCap.copyRefLink}
-                        </Button>
-                    </div>
-                )
+                text: pledgeOnly
+                    ? undefined
+                    : (
+                        <div>
+                            {textsCap.txSuccessMsg} {textsCap.txSuccessMsg2}
+                            <br />
+                            <Button {...{
+                                color: 'success',
+                                // Component: 'a',
+                                href: explorerUrl,
+                                target: '_blank',
+                                variant: 'outlined',
+                            }}>
+                                <OpenInNew /> {textsCap.viewTransaction}
+                            </Button>
+                            <br />
+                            <br />
+                            {textsCap.invite1} {textsCap.invite2}
+                            <br />
+                            <Button {...{
+                                color: 'success',
+                                onClick: handleCopyReferralUrl,
+                                variant: 'outlined',
+                            }}>
+                                <ContentCopy /> {textsCap.copyRefLink}
+                            </Button>
+                        </div>
+                    )
             })
         }, 300)
     }
 
     modalService.confirm({
         confirmButton: textsCap.signAndSend,
-        content: (
-            <>
-                {textsCap.signatureMsg}
-                <br />
-                {textsCap.signatureMsg2}
-            </>
-        ),
+        content: pledgeOnly
+            ? undefined
+            : (
+                <>
+                    {textsCap.signatureMsg}
+                    <br />
+                    {textsCap.signatureMsg2}
+                </>
+            ),
         maxWidth: 'xs',
         onConfirm: handleError(
             handleConfirm,
@@ -905,7 +962,9 @@ const handleSubmit = (rxInputs, setState) => async (allOk, values, inputs, event
             },
             modalId,
         ),
-        title: textsCap.signatureHeader,
+        title: pledgeOnly
+            ? textsCap.updatePledge
+            : textsCap.signatureHeader,
     }, modalId)
 }
 

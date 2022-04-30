@@ -24,6 +24,9 @@ const theme = createTheme(({
         dangerDark: {
             main: red[900]
         },
+        deeppink: {
+            main: '#ff1493',
+        },
         success: {
             main: green[500],
         },

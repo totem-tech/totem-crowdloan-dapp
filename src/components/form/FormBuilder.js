@@ -115,6 +115,7 @@ export default function FormBuilder(props) {
         || !!inputs.find(x => checkInputInvalid(x, hiddenInputs))
         || !checkValuesChanged(inputs, values, valuesOriginal)
 
+    const submitProps = toProps(submitButton)
     return (
         <div {...{
             autoComplete: 'off',
@@ -148,9 +149,12 @@ export default function FormBuilder(props) {
                         disabled: submitDisabled,
                         variant: 'contained',
                         color: 'primary',
-                        style: { margin: '0 0 0 auto' },
                         onClick: handleSubmit,
-                        ...toProps(submitButton),
+                        ...submitProps,
+                        style: {
+                            margin: '0 0 0 auto',
+                            ...submitProps.style,
+                        },
                     }} />
                     {buttonAfter}
                 </div>
