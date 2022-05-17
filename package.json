@@ -13,7 +13,7 @@
   "scripts": {
     "build": "rm -rf dist && DIST_DIR='dist' DOT_ENV_PATH='.env' webpack --mode production",
     "build-local": "rm -rf dist-local && DIST_DIR='dist-local' DOT_ENV_PATH='.env.local' webpack --mode development",
-    "build-staging": "rm -rf dist-staging && DIST_DIR='dist-staging' DOT_ENV_PATH='.env' webpack --mode development",
+    "build-staging": "rm -rf dist-staging && DIST_DIR='dist-staging' DOT_ENV_PATH='.env.staging' webpack --mode development",
     "start": "DOT_ENV_PATH='.env.local' webpack-dev-server",
     "test": "echo \"No test specified\""
   },
