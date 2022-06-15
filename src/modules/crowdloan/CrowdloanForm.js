@@ -817,16 +817,12 @@ const handleSubmitCb = (rxInputs, setState) => async (_, values) => {
     const client = await getClient()
     const identity = values[inputNames.identity]
     const identityObj = identityHelper.get(identity)
-    if (!identityObj) return
-
     const amountContributed = values[inputNames.amountContributed]
     const amountToContribute = values[inputNames.amountToContribute] || 0
     const amountPledged = values[inputNames.amountPledged]
-    const pledgeOnly = amountContributed > 5 && !amountToContribute
-    console.log({
-        amountContributed,
-        amountToContribute
-    })
+    const pledgeOnly = !amountToContribute && amountPledged > 0
+    if (!identityObj || (!amountPledged && !amountToContribute)) return
+
     const entry = {
         amountContributed: amountContributed + amountToContribute, // old + new
         amountPledged,
