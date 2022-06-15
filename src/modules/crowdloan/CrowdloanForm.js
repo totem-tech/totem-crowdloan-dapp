@@ -886,7 +886,7 @@ const handleSubmitCb = (rxInputs, setState) => async (_, values) => {
             })
         })
 
-        signer && showMessage({
+        signer && !pledgeOnly && showMessage({
             status: STATUS.loading,
             text: textsCap.signTxMsg,
         })
