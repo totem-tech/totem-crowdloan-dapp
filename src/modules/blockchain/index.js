@@ -1,6 +1,7 @@
 import { translated } from '../../utils/languageHelper'
 import _BlockchainHelper from '../../utils/substrate/BlockchainHelper'
 import CrowdloanHelper from '../../utils/substrate/CrowdloanHelper'
+import { getUrlParam } from '../../utils/utils'
 
 const textsCap = translated({
     blockchainNetwork: 'Blockchain Network',
@@ -15,16 +16,19 @@ export const targetCap = parseFloat(process.env.REACT_APP_TARGET_CAP) || 0
 export const crowdloanActive = process.env.REACT_APP_CROWDLOAN_ACTIVE !== 'NO'
 const chainTitle = process.env.REACT_APP_CHAIN_TITLE || textsCap.blockchainNetwork
 export const dappTitle = process.env.REACT_APP_DAPP_TITLE || textsCap.unnamed
-const nodeUrls = (process.env.REACT_APP_NODE_URL || '')
-    .split(',')
+const nodeUrls = [getUrlParam('node-url', window.location.href)]
     .filter(Boolean)
+    .concat(
+        ...(process.env.REACT_APP_NODE_URL || '')
+            .split(',')
+            .filter(Boolean)
+    )
 const disconnectDelayMs = parseInt(process.env.REACT_APP_NODE_DISCONNECT_DELAY_MS || 1000 * 60 * 15)
 const unit = {
     amount: parseInt(process.env.REACT_APP_UNIT_AMOUNT) || 1,
     decimals: parseInt(process.env.REACT_APP_UNIT_DECIMALS) || 2,
     name: process.env.REACT_APP_UNIT_NAME || 'DOT'
 }
-
 const blockchainHelper = new _BlockchainHelper(
     nodeUrls,
     chainTitle,
