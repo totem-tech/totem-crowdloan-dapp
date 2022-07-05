@@ -11,6 +11,7 @@ const textsCap = translated({
 export const BlockchainHelper = _BlockchainHelper
 export const parachainId = parseInt(process.env.REACT_APP_PARACHAIN_ID) || undefined
 export const pledgeCap = parseFloat(process.env.PLEDGE_CAP) || 0
+console.log({ pledgeCap })
 export const softCap = parseFloat(process.env.REACT_APP_SOFT_CAP) || 0
 export const targetCap = parseFloat(process.env.REACT_APP_TARGET_CAP) || 0
 export const pledgeDeadline = new Date(process.env.REACT_APP_PLEDGE_DEADLINE)
