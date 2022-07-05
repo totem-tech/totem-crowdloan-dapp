@@ -8,7 +8,7 @@ import {
     ListItemText,
 } from '@mui/material'
 import { Cancel, CheckCircleSharp } from '@mui/icons-material'
-import { isArr, isFn, isSubjectLike } from '../../utils/utils'
+import { isArr, isBool, isFn, isSubjectLike } from '../../utils/utils'
 import { TYPES, validate as _validate } from '../../utils/validator'
 import { STATUS } from '../Message'
 
@@ -184,7 +184,9 @@ export const validateInput = (input, inputs = [], values = getValues(inputs)) =>
         valid.push(!err)
     }
     // validation error message
-    validation.message = !!err && {
+    validation.message = !isBool(err)
+        && !!err
+        && {
         status: STATUS.error,
         text: err,
     }

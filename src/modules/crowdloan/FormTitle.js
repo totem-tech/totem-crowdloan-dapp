@@ -1,23 +1,21 @@
-import React, { useEffect } from 'react'
+import React from 'react'
 import {
     Box,
-    CircularProgress,
     Step,
     StepLabel,
     Stepper,
 } from '@mui/material'
 import Message, { STATUS } from '../../components/Message'
 import { translated } from '../../utils/languageHelper'
-import { isFn } from '../../utils/utils'
 import blockchainHelper, { dappTitle } from '../blockchain'
 import { shorten } from '../../utils/number'
 import useStyles from './useStyles'
 import { useRxSubject } from '../../utils/reactHelper'
 import { findInput } from '../../components/form/InputCriteriaHint'
-import { checkDevice, DEVICE_TYPE } from '../../utils/checkDevice'
+import Countdown from '../../components/Countdown'
 
 const [texts, textsCap] = translated({
-    amountRaised: 'amount raised',
+    amountRaised: 'amount contributed',
     contributeTo: 'contribute to',
     crowdloan: 'crowdloan',
     errCrowdloanEnded: 'crowdloan has ended',
@@ -25,6 +23,8 @@ const [texts, textsCap] = translated({
     errCrowdloanInvalid: 'crowdloan is coming soon',
     errCrowdloanInvalidDetails: 'please join our social media channels for announcements',
     bonus: 'bonus',
+    pledge: 'pledge',
+    pledgeCountDownTitle: 'pledge round ends in',
     stepHardCap: 'hard cap',
     stepStarted: 'started',
     stepSoftCap: 'soft cap',
@@ -51,6 +51,7 @@ function CrowdloanStatusSteps({ status }) {
         hardCap,
         hardCapReached,
         isValid,
+        pledgeActive,
         softCap,
         softCapReached,
         targetCap,
@@ -59,8 +60,7 @@ function CrowdloanStatusSteps({ status }) {
     const ticker = blockchainHelper.unit.name || 'DOT'
     const bonusStyle = { color: 'deeppink' }
     const capStyle = { fontWeight: 'initial' }
-    const isMobile = checkDevice([DEVICE_TYPE.mobile])
-
+    // const isMobile = checkDevice([DEVICE_TYPE.mobile])
 
     const steps = [
         {
@@ -104,6 +104,16 @@ function CrowdloanStatusSteps({ status }) {
         },
     ].filter(Boolean)
 
+    const amountRaisedEl = amountRaised > 0 && (
+        <div className={classes.amountRaised}>
+            <center>
+                <strong>
+                    {textsCap.amountRaised}: {shorten(amountRaised, 2)} {ticker}
+                </strong>
+            </center>
+        </div>
+    )
+
     return (
         <>
             {!active && (
@@ -113,27 +123,20 @@ function CrowdloanStatusSteps({ status }) {
                         : textsCap.errCrowdloanInvalid,
                     icon: true,
                     status: STATUS.warning,
-                    text: isValid
-                        ? textsCap.errCrowdloanEndedDetails
-                        : textsCap.errCrowdloanInvalidDetails,
+                    text: !isValid
+                        ? textsCap.errCrowdloanInvalidDetails
+                        : (
+                            <div>
+                                {textsCap.errCrowdloanEndedDetails}
+
+                                {amountRaisedEl}
+                            </div>
+                        ),
                 }} />
             )}
 
-            {amountRaised > 0 && (
-                <div className={classes.amountRaised}>
-                    <center>
-                        <strong>
-                            {textsCap.amountRaised}: {shorten(amountRaised, 2)} {ticker}
-                            {/* {amountPledged && (
-                                <div>
-                                    {textsCap.amountPledged}: {shorten(amountPledged, 2)} {ticker}
-                                </div>
-                            )} */}
-                        </strong>
-                    </center>
-                </div>
-            )}
-            {isValid && (
+            {active && amountRaisedEl}
+            {isValid && active && (
                 <Stepper alternativeLabel style={{ paddingTop: 15 }}>
                     {steps.map((x, i) => (
                         <Step {...{
@@ -164,13 +167,18 @@ function CrowdloanStatusSteps({ status }) {
 
 const FormTitle = ({ rxInputs }) => {
     const classes = useStyles()
-    const [status] = useRxSubject(
+    const [status = {}] = useRxSubject(
         rxInputs,
         inputs => findInput(
             inputNames.crowdloanStatus,
             inputs,
         )?.value,
     )
+    const {
+        active,
+        pledgeActive,
+        pledgeDeadline,
+    } = status
 
     return (
         <Box sx={{ width: '100%' }}>
@@ -178,9 +186,16 @@ const FormTitle = ({ rxInputs }) => {
                 {textsCap.contributeTo}
             </h4>
             <h1 className={classes.title}>
-                {dappTitle} {textsCap.crowdloan}
+                {dappTitle} {!pledgeActive ? textsCap.crowdloan : textsCap.pledge}
             </h1>
-            <CrowdloanStatusSteps status={status} />
+            {!pledgeDeadline && <CrowdloanStatusSteps status={status} />}
+
+            {pledgeDeadline && (
+                <Countdown {...{
+                    date: pledgeDeadline,
+                    title: textsCap.pledgeCountDownTitle,
+                }} />
+            )}
         </Box>
     )
 }

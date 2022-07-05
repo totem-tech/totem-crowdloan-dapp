@@ -10,12 +10,14 @@ const textsCap = translated({
 }, true)[1]
 export const BlockchainHelper = _BlockchainHelper
 export const parachainId = parseInt(process.env.REACT_APP_PARACHAIN_ID) || undefined
-export const pledgeCap = parseFloat(process.env.PLDEGE_CAP) || 0
+export const pledgeCap = parseFloat(process.env.PLEDGE_CAP) || 0
 export const softCap = parseFloat(process.env.REACT_APP_SOFT_CAP) || 0
 export const targetCap = parseFloat(process.env.REACT_APP_TARGET_CAP) || 0
+export const pledgeDeadline = new Date(process.env.REACT_APP_PLEDGE_DEADLINE)
 export const crowdloanActive = process.env.REACT_APP_CROWDLOAN_ACTIVE !== 'NO'
 const chainTitle = process.env.REACT_APP_CHAIN_TITLE || textsCap.blockchainNetwork
 export const dappTitle = process.env.REACT_APP_DAPP_TITLE || textsCap.unnamed
+
 const nodeUrls = [getUrlParam('node-url', window.location.href)]
     .filter(Boolean)
     .concat(
@@ -37,7 +39,6 @@ const blockchainHelper = new _BlockchainHelper(
     {}, // ToDo use translations?
     unit,
 )
-
 export const crowdloanHelper = new CrowdloanHelper(
     blockchainHelper,
     parachainId,

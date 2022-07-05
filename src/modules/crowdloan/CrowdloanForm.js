@@ -20,6 +20,7 @@ import { useRxSubject } from '../../utils/reactHelper'
 import identityHelper from '../../utils/substrate/identityHelper'
 import {
     arrSort,
+    copyToClipboard,
     deferred,
     isError,
     isFn,
@@ -27,32 +28,36 @@ import {
     textEllipsis,
 } from '../../utils/utils'
 // Modules
-import blockchainHelper, { crowdloanHelper, pledgeCap, softCap, targetCap } from '../blockchain/'
+import blockchainHelper, { crowdloanHelper, pledgeCap, pledgeDeadline, softCap, targetCap } from '../blockchain/'
 import Balance from '../blockchain/Balance'
 import getClient from '../messaging/'
-import { AccordionGroup, checkExtenstion, enableExtionsion } from './checkExtension'
+import { checkExtenstion, enableExtionsion } from './checkExtension'
 import Contributed from './Contributed'
 import FormTitle from './FormTitle'
 import useCrowdloanStatus from './useCrowdloanStatus'
 import useStyles from './useStyles'
 import FormInput from '../../components/form/FormInput'
+import { formatBalance } from '../blockchain/formatBalance'
 
-const BASE_REWARD = 0.1
+const BASE_REWARD = 1.15 //0.1
 const PLEDGE_PERCENTAGE = 1 // 100%
-const PLDEGE_REWARD = 0.32
+const PLDEGE_REWARD = 3.67 //0.32
 const TOTEM_APP_URL = process.env.REACT_APP_TOTEM_APP_URL
+const PLEDGE_IDENTITY = '14K5BeQDAwETVu9c7uRnxixW1DRefrbawD8yima2Mv2nR651'
 const [texts, textsCap] = translated({
-    amtContdLabel: 'amount already contributed',
+    amtContdLabel: 'amount contributed to crowdloan',
     amountPledged: 'total amount pledged',
     amtPlgCapReachedMsg: 'We have reached the pledge cap. You can continue to make new contributions until hard cap is reached and crowdloan is active. However, you will not be able to update the pledge amount.',
     amtPlgCapReachedTitle: 'pledge cap reached!',
     amtPlgInvalid: 'please enter an amount greater or equal to your previously pledged amount',
+    amtPlgInvalid2: 'please enter an amount greater or equal to your previously transferred total amount',
     amtPlgLabel: 'amount you would like to pledge',
     amtPlgLabel2: 'amount you pledged',
     amtPlgLabelDetails: 'You can pledge upto a maximum 100% of your crowdloan contribution.',
     amtPlgLabelDetails2: 'Your pledged amount will be requested only after a parachain slot is won.',
     amtPlgLabelDetails3: 'learn more',
     amtPlgResetValue: 'click to reset to previous pledge amount',
+    amtPlgResetValue2: 'click to reset to previously transferred total amount',
     amtRewardsLabel: 'estimated rewards',
     amtRewardsLabelDetails1: 'indicates minimum expected reward excluding any referral and campaign rewards.',
     amtRewardsLabelDetails2: 'learn more about rewards distribution',
@@ -82,9 +87,14 @@ const [texts, textsCap] = translated({
     errPledgeSave: 'failed to store contribution data',
     errPledgeOnlySave: 'failed to update pledge data',
     errPledgeSaveSubtitle: 'Your contribution was successful. However, the request to store your contribution and pledge data on our database failed! Please check the error message below:',
+    errPledgeSaveSubtitle2: 'Your transfer transaction was successful. However, failed to store data on our database. Not to worry, you will stil receive your rewards. You can drop us a message here:',
     errSignature: 'signature pre-validation failed',
     errTxFailed: 'transaction failed',
     fetchingContributions: 'checking existing contributions...',
+    pledgeFulfill: 'fulfill pledge',
+    pledgeFulfillDesc: 'you are about to transfer your pledged amount to the following identity owned by Totem Live Association.',
+    pledgeRecipientIdentity: 'recipient identity',
+    pledgeTransferAmount: 'transfer amount',
     howToVideo: 'Watch our "how to contribute" video',
     idLabel: 'select your blockchain identity',
     idPlaceholder: 'select a blockchain identity',
@@ -98,6 +108,7 @@ const [texts, textsCap] = translated({
     signTxMsg: 'please approve to sign the transaction using your extension identity',
     signDataMsg: 'please approve to sign a message using your extension identity',
     submit: 'contribute',
+    submitPledge: 'fulfill pledge',
     pledgeUpdated: 'your pledged amount has been updated successsfully!',
     transactionCompleted: 'transaction completed successfully!',
     txSuccessMsg: 'thank you for contributing!',
@@ -159,7 +170,7 @@ export default function CrowdloanForm(props) {
     const amountToContribute = findInput(inputNames.amountToContribute, inputs).value
     const amountContributed = findInput(inputNames.amountContributed, inputs).value
     const pledgeIn = findInput(inputNames.amountPledged, inputs)
-    const { active, isValid } = statusIn.value || {}
+    const { active, isValid, pledgeActive, pledgeDeadline } = statusIn.value || {}
     const initModalId = 'init'
     const allowPledgeOnly = !!active
         && amountContributed >= 5
@@ -329,7 +340,9 @@ export default function CrowdloanForm(props) {
                 rxInputs.value,
             )
             statusIn.value = status
-            if (!status.active) pledgeIn.label = `${textsCap.amtPlgLabel2} (${blockchainHelper.unit.name})`
+            if (!status.active && !status.pledgeActive) {
+                pledgeIn.label = `${textsCap.amtPlgLabel2} (${blockchainHelper.unit.name})`
+            }
             rxInputs.next([...rxInputs.value])
         }
     }, [status])
@@ -344,12 +357,16 @@ export default function CrowdloanForm(props) {
         : state.error
     if (error) return <Message {...error} />
 
+    // const submitFn = pledgeActive
+    //     ? handleSubmitPledgeCb
+    //     : handleSubmitCb
     const handleSubmit = handleSubmitCb(rxInputs, s => setState({ ...s }))
+
     return (
         <FormBuilder {...{
             ...props,
             ...state,
-            buttonAfter: (
+            buttonAfter: !pledgeActive && (
                 <div style={{ marginTop: 30, textAlign: 'center' }}>
                     <Button {...{
                         color: 'success',
@@ -402,10 +419,12 @@ export default function CrowdloanForm(props) {
             onSubmit: handleSubmit,
             rxInputs,
             // hide submit button when not active
-            submitButton: !active
+            submitButton: !active & !pledgeActive
                 ? null
                 : {
-                    children: textsCap.submit,
+                    children: active
+                        ? textsCap.submit
+                        : textsCap.submitPledge,
                     style: allowPledgeOnly
                         ? {
                             position: 'fixed',
@@ -529,13 +548,17 @@ export const getRxInputs = (classes) => {
 
             // fetch existing amount pledged (if any)
             const client = await getClient()
-            const { amountPledged = 0 } = amountContributed > 0
-                && await client
-                    .crowdloan(identity)
-                    .catch(() => ({}))
+            const result = amountContributed > 0 && await client
+                .crowdloan(identity)
+                .catch(() => ({}))
                 || {}
+            const {
+                amountPledged = 0,
+                amountPledgeFulfilled = 0,
+            } = result
             pledgeIn.value = amountPledged
             pledgeIn.valueOld = amountPledged
+            pledgeIn.valuePledgeFulfilled = amountPledgeFulfilled
             toContributeIn.onChange(
                 getValues(rxInputs.value),
                 rxInputs.value,
@@ -645,11 +668,12 @@ export const getRxInputs = (classes) => {
             ignoredAttrs: [
                 ...FormInput.defaultProps.ignoredAttrs,
                 'valueOld',
+                'valuePledgeFulfilled'
             ],
             label: `${textsCap.amtPlgLabel} (${blockchainHelper.unit.name})`,
             labelDetails: (
                 <div>
-                    {textsCap.amtPlgLabelDetails} {textsCap.amtPlgLabelDetails2 + ' '}
+                    {textsCap.amtPlgLabelDetails} {/*textsCap.amtPlgLabelDetails2*/}{' '}
                     <a
                         className={classes.link}
                         href='https://docs.totemaccounting.com/#/crowdloan/participation?id=what-is-a-pledge' target='_blank'
@@ -667,13 +691,21 @@ export const getRxInputs = (classes) => {
             valueLabelFormat: value => Number(value.toFixed(2)),
             validation: {
                 validate: (pledgeIn, inputs, values) => {
-                    const { value, valueOld = 0 } = pledgeIn
-                    const invalid = valueOld > 0 && valueOld > value
+                    const { pledgeActive } = values[inputNames.crowdloanStatus] || {}
+                    const {
+                        value,
+                        valueOld = 0,
+                        valuePledgeFulfilled = 0,
+                    } = pledgeIn
+                    const minValue = pledgeActive
+                        ? valuePledgeFulfilled
+                        : valueOld
 
+                    const invalid = minValue > 0 && minValue > value
                     // reset to previous pledged amount
                     const resetValue = e => {
                         e.preventDefault()
-                        pledgeIn.value = valueOld
+                        pledgeIn.value = minValue
                         const values = getValues(inputs)
                         // force re-validate input
                         validateInput(pledgeIn, inputs, values)
@@ -687,9 +719,11 @@ export const getRxInputs = (classes) => {
                                 className: classes.link,
                                 href: '#',
                                 onClick: resetValue,
-                                title: textsCap.amtPlgResetValue,
+                                title: pledgeActive
+                                    ? textsCap.amtPlgResetValue2
+                                    : textsCap.amtPlgResetValue,
                             }}>
-                                {valueOld} {blockchainHelper.unit.name}
+                                {minValue} {blockchainHelper.unit.name}
                             </a>
                         </>
                     )
@@ -814,18 +848,24 @@ const handleError = (func, onFinally, modalId) => {
  * @returns {Function}  
  */
 const handleSubmitCb = (rxInputs, setState) => async (_, values) => {
+    const { pledgeActive } = values[inputNames.crowdloanStatus]
     const client = await getClient()
     const identity = values[inputNames.identity]
     const identityObj = identityHelper.get(identity)
     const amountContributed = values[inputNames.amountContributed]
     const amountToContribute = values[inputNames.amountToContribute] || 0
     const amountPledged = values[inputNames.amountPledged]
-    const pledgeOnly = !amountToContribute && amountPledged > 0
+    const pledgeUpdateOnly = !pledgeActive && !amountToContribute && amountPledged > 0
+    const pledgeIn = findInput(inputNames.amountPledged, rxInputs.value)
+    const amountToTransfer = amountPledged - (pledgeIn.valuePledgeFulfilled || 0)
+    console.log({ amountPledged, amountToTransfer, f: pledgeIn.valuePledgeFulfilled })
     if (!identityObj || (!amountPledged && !amountToContribute)) return
+    if (pledgeActive && !amountToTransfer) return
 
     const entry = {
         amountContributed: amountContributed + amountToContribute, // old + new
         amountPledged,
+        amountPledgeFulfilled: amountPledged,
         identity,
         userId: getUser().id,
     }
@@ -878,7 +918,7 @@ const handleSubmitCb = (rxInputs, setState) => async (_, values) => {
         // keep track of and display transaction status
         const rxUpdater = new BehaviorSubject({ status: { type: 'Initiating' } })
         unsubscribe = rxUpdater.subscribe(result => {
-            !pledgeOnly && showMessage({
+            !pledgeUpdateOnly && showMessage({
                 header: textsCap.txInProgress,
                 icon: true,
                 status: STATUS.loading,
@@ -886,42 +926,57 @@ const handleSubmitCb = (rxInputs, setState) => async (_, values) => {
             })
         })
 
-        signer && !pledgeOnly && showMessage({
+        signer && !pledgeUpdateOnly && showMessage({
             status: STATUS.loading,
             text: textsCap.signTxMsg,
         })
         // execute the contribution transaction
-        const [blockHash, eventErrors, txResult] = pledgeOnly
+        const [blockHash, eventErrors, txResult] = pledgeUpdateOnly
             ? []
-            : await blockchainHelper
-                .signAndSend(
-                    identity,
-                    'api.tx.crowdloan.contribute',
-                    [
-                        crowdloanHelper.parachainId,
-                        amountToContribute * blockchainHelper.unit.amount,
-                        undefined, // required
-                    ],
-                    rxUpdater,
-                    signer
-                )
-                .catch(customError(textsCap.errTxFailed))
+            : pledgeActive
+                ? await blockchainHelper
+                    .signAndSend(
+                        identity,
+                        'api.tx.balances.transfer',
+                        [
+                            PLEDGE_IDENTITY,
+                            amountToTransfer * blockchainHelper.unit.amount,
+                        ],
+                    )
+                    .catch(customError(textsCap.errTxFailed))
+                : await blockchainHelper
+                    .signAndSend(
+                        identity,
+                        'api.tx.crowdloan.contribute',
+                        [
+                            crowdloanHelper.parachainId,
+                            amountToContribute * blockchainHelper.unit.amount,
+                            undefined, // required
+                        ],
+                        rxUpdater,
+                        signer
+                    )
+                    .catch(customError(textsCap.errTxFailed))
 
         // store pledge data with signature to the messaging server
         await client
             .crowdloan({
                 ...entry,
                 blockHash,
-                blockIndex: pledgeOnly
+                blockIndex: pledgeUpdateOnly
                     ? undefined
                     : txResult.status.index,
                 signature,
             })
             .catch(customError(
-                pledgeOnly
+                pledgeUpdateOnly
                     ? textsCap.errPledgeOnlySave
                     : textsCap.errPledgeSave,
-                !pledgeOnly && textsCap.errPledgeSaveSubtitle,
+                pledgeUpdateOnly
+                    ? undefined
+                    : pledgeActive
+                        ? textsCap.errPledgeSaveSubtitle2
+                        : textsCap.errPledgeSaveSubtitle,
             ))
 
         // trigger identity onChange to update contributed amount
@@ -934,12 +989,12 @@ const handleSubmitCb = (rxInputs, setState) => async (_, values) => {
         // delay to prevent message being overriden by status message
         setTimeout(() => {
             showMessage({
-                header: pledgeOnly
+                header: pledgeUpdateOnly
                     ? textsCap.pledgeUpdated
                     : textsCap.transactionCompleted,
                 icon: true,
                 status: STATUS.success,
-                text: pledgeOnly
+                text: pledgeUpdateOnly
                     ? undefined
                     : (
                         <div>
@@ -973,15 +1028,34 @@ const handleSubmitCb = (rxInputs, setState) => async (_, values) => {
 
     modalService.confirm({
         confirmButton: textsCap.signAndSend,
-        content: pledgeOnly
-            ? undefined
-            : (
+        content: pledgeActive
+            ? (
                 <>
-                    {textsCap.signatureMsg}
+                    {textsCap.pledgeFulfillDesc}
+                    <br /><br />
+                    {textsCap.pledgeRecipientIdentity}:
                     <br />
-                    {textsCap.signatureMsg2}
+                    <span
+                        style={{ cursor: 'pointer' }}
+                        onClick={() => window.navigator.clipboard.writeText(PLEDGE_IDENTITY)}
+                    >
+                        {textEllipsis(PLEDGE_IDENTITY, 20) + ' '}
+                        <ContentCopy />
+                    </span>
+                    <br /><br />
+                    {textsCap.pledgeTransferAmount}:
+                    <br />{amountToTransfer} {blockchainHelper.unit.name}
                 </>
-            ),
+            )
+            : pledgeUpdateOnly
+                ? undefined
+                : (
+                    <>
+                        {textsCap.signatureMsg}
+                        <br />
+                        {textsCap.signatureMsg2}
+                    </>
+                ),
         maxWidth: 'xs',
         onConfirm: handleError(
             handleConfirm,
@@ -993,12 +1067,13 @@ const handleSubmitCb = (rxInputs, setState) => async (_, values) => {
             },
             modalId,
         ),
-        title: pledgeOnly
-            ? textsCap.updatePledge
-            : textsCap.signatureHeader,
+        title: pledgeActive
+            ? textsCap.pledgeFulfill
+            : pledgeUpdateOnly
+                ? textsCap.updatePledge
+                : textsCap.signatureHeader,
     }, modalId)
 }
-
 
 const balances = new Map()
 /**

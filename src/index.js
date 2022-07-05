@@ -68,9 +68,11 @@ if (!showComingSoon) {
         )
         window.utils = {
             convert: require('./utils/convert'),
+            DataStorage: require('./utils/DataStorage').default,
             naclHelper: require('./utils/naclHelper'),
             number: require('./utils/number'),
             PromisE: require('./utils/PromisE').default,
+            storage: require('./utils/storageHelper').default,
             utils: require('./utils/utils'),
             validator: require('./utils/validator'),
         }

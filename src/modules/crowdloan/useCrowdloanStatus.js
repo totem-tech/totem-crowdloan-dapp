@@ -4,8 +4,8 @@ import { getClient, rxIsConnected } from '../../utils/chatClient'
 import { translated } from '../../utils/languageHelper'
 import { subjectAsPromise, unsubscribe } from '../../utils/reactHelper'
 import CrowdloanHelper from '../../utils/substrate/CrowdloanHelper'
-import { deferred, isBool, isValidNumber } from '../../utils/utils'
-import blockchainHelper, { crowdloanActive } from '../blockchain/'
+import { deferred, isDate, isValidNumber } from '../../utils/utils'
+import blockchainHelper, { crowdloanActive, pledgeDeadline } from '../blockchain/'
 
 const rxPledgeTotal = new BehaviorSubject(0)
 const textsCap = translated({
@@ -56,6 +56,10 @@ export default function useCrowdloanStatus(crowdloanHelper, softCap, targetCap, 
                 pledgeCapReached = !!pledgeCap && value >= pledgeCap
                 updateStatus()
             })
+
+            if (!isDate(pledgeDeadline)) return
+            const delayMs = pledgeDeadline - new Date()
+            delayMs >= 0 && setTimeout(updateStatus, delayMs)
         }
         const updateStatus = deferred(() => {
             const allReceived = [
@@ -78,8 +82,10 @@ export default function useCrowdloanStatus(crowdloanHelper, softCap, targetCap, 
                 hardCapReached: isValid
                     && amountRaised >= hardCap,
                 isValid,
+                pledgeActive: isDate(pledgeDeadline) && pledgeDeadline > new Date(),
                 pledgeCap,
                 pledgeCapReached,
+                pledgeDeadline,
                 softCap,
                 softCapReached: isValid
                     && isValidNumber(softCap)
