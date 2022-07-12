@@ -50,7 +50,7 @@ const [texts, textsCap] = translated({
     amtPlgCapReachedMsg: 'We have reached the pledge cap. You can continue to make new contributions until hard cap is reached and crowdloan is active. However, you will not be able to update the pledge amount.',
     amtPlgCapReachedTitle: 'pledge cap reached!',
     amtPlgInvalid: 'please enter an amount greater or equal to your previously pledged amount',
-    amtPlgInvalid2: 'please enter an amount greater or equal to your previously transferred total amount',
+    amtPlgInvalid2: 'please enter an amount greater than your previously transferred total amount',
     amtPlgLabel: 'amount you would like to pledge',
     amtPlgLabel2: 'amount you pledged',
     amtPlgLabelDetails: 'You can pledge upto a maximum 100% of your crowdloan contribution.',
@@ -94,10 +94,11 @@ const [texts, textsCap] = translated({
     pledgeFulfill: 'fulfill pledge',
     pledgeFulfillDesc: 'you are about to transfer your pledged amount to the following identity owned by Totem Live Association.',
     pledgeRecipientIdentity: 'recipient identity',
-    pledgeTransferAmount: 'transfer amount',
+    pledgeTransferAmount: 'amount to be transferred now',
     howToVideo: 'Watch our "how to contribute" video',
     idLabel: 'select your blockchain identity',
     idPlaceholder: 'select a blockchain identity',
+    ineligibleToPledge: 'only crowdloan contributors are eligible to participate in the pledge round',
     invite1: 'why not invite your friends to Totem?',
     invite2: 'if your friends contribute you both will earn extra tokens.',
     missingParaId: 'missing parachain ID',
@@ -357,9 +358,6 @@ export default function CrowdloanForm(props) {
         : state.error
     if (error) return <Message {...error} />
 
-    // const submitFn = pledgeActive
-    //     ? handleSubmitPledgeCb
-    //     : handleSubmitCb
     const handleSubmit = handleSubmitCb(rxInputs, s => setState({ ...s }))
 
     return (
@@ -510,13 +508,14 @@ export const getRxInputs = (classes) => {
                     value: pledgeIn.max,
                 },
             ]
-        pledgeIn.step = pledgeIn.max > 1000
-            ? 10
-            : pledgeIn.max > 100
-                ? 1
-                : pledgeIn.max > 10
-                    ? 0.1
-                    : 0.01
+        pledgeIn.step = 0.01
+        // pledgeIn.max > 1000
+        //     ? 10
+        //     : pledgeIn.max > 100
+        //         ? 1
+        //         : pledgeIn.max > 10
+        //             ? 0.1
+        //             : 0.01
         pledgeIn.value = pledgeIn.value > pledgeIn.max
             ? pledgeIn.max
             : pledgeIn.value
@@ -527,6 +526,7 @@ export const getRxInputs = (classes) => {
     const deferredPromise = PromisE.deferred()
     const handleIdentityChange = async (values, inputs) => {
         const identity = values[inputNames.identity]
+        const { pledgeActive } = values[inputNames.crowdloanStatus] || {}
         const contributedIn = findInput(inputNames.amountContributed, inputs)
         const toContributeIn = findInput(inputNames.amountToContribute, inputs)
         const identityIn = findInput(inputNames.identity, rxInputs.value)
@@ -543,6 +543,8 @@ export const getRxInputs = (classes) => {
         try {
             const promise = crowdloanHelper.getUserContributions(identity)
             const amountContributed = await deferredPromise(promise)
+            const parallel = await crowdloanHelper.getUserContributionsParallel(identity)
+            console.log({ amountContributed, parallel })
             contributedIn.value = amountContributed
             // contributedIn.hidden = amountContributed <= 0
 
@@ -563,7 +565,15 @@ export const getRxInputs = (classes) => {
                 getValues(rxInputs.value),
                 rxInputs.value,
             )
-            identityIn.message = null
+
+            const ineligibleToPledge = pledgeActive && !amountContributed
+            identityIn.message = ineligibleToPledge
+                ? {
+                    icon: true,
+                    status: STATUS.error,
+                    text: textsCap.ineligibleToPledge,
+                }
+                : null
             rxInputs.next([...rxInputs.value])
         } catch (err) {
             identityIn.message = {
@@ -691,6 +701,8 @@ export const getRxInputs = (classes) => {
             valueLabelFormat: value => Number(value.toFixed(2)),
             validation: {
                 validate: (pledgeIn, inputs, values) => {
+                    const identity = values[inputNames.identity]
+                    const maxValue = values[inputNames.amountContributed]
                     const { pledgeActive } = values[inputNames.crowdloanStatus] || {}
                     const {
                         value,
@@ -701,7 +713,14 @@ export const getRxInputs = (classes) => {
                         ? valuePledgeFulfilled
                         : valueOld
 
-                    const invalid = minValue > 0 && minValue > value
+                    // const invalid = identity
+                    //     && minValue > 0
+                    //     && minValue > value
+                    const invalid = identity
+                        && value > maxValue
+                        && !pledgeActive
+                        ? minValue && minValue > value
+                        : minValue >= value
                     // reset to previous pledged amount
                     const resetValue = e => {
                         e.preventDefault()
@@ -712,21 +731,25 @@ export const getRxInputs = (classes) => {
                         handlePledgeChange(values, inputs, pledgeIn)
                         rxInputs.next([...inputs])
                     }
-                    return invalid && (
-                        <>
-                            {textsCap.amtPlgInvalid + ' '}
-                            <a {...{
-                                className: classes.link,
-                                href: '#',
-                                onClick: resetValue,
-                                title: pledgeActive
-                                    ? textsCap.amtPlgResetValue2
-                                    : textsCap.amtPlgResetValue,
-                            }}>
-                                {minValue} {blockchainHelper.unit.name}
-                            </a>
-                        </>
-                    )
+                    const error = !value || valuePledgeFulfilled === value
+                        ? true
+                        : (
+                            <>
+                                {!pledgeActive ? textsCap.amtPlgInvalid : textsCap.amtPlgInvalid2}
+                                {' '}
+                                <a {...{
+                                    className: classes.link,
+                                    href: '#',
+                                    onClick: resetValue,
+                                    title: pledgeActive
+                                        ? textsCap.amtPlgResetValue2
+                                        : textsCap.amtPlgResetValue,
+                                }}>
+                                    {minValue} {blockchainHelper.unit.name}
+                                </a>
+                            </>
+                        )
+                    return invalid && error
                 }
             }
         },
