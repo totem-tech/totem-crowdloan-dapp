@@ -543,8 +543,6 @@ export const getRxInputs = (classes) => {
         try {
             const promise = crowdloanHelper.getUserContributions(identity)
             const amountContributed = await deferredPromise(promise)
-            const parallel = await crowdloanHelper.getUserContributionsParallel(identity)
-            console.log({ amountContributed, parallel })
             contributedIn.value = amountContributed
             // contributedIn.hidden = amountContributed <= 0
 
@@ -881,7 +879,6 @@ const handleSubmitCb = (rxInputs, setState) => async (_, values) => {
     const pledgeUpdateOnly = !pledgeActive && !amountToContribute && amountPledged > 0
     const pledgeIn = findInput(inputNames.amountPledged, rxInputs.value)
     const amountToTransfer = amountPledged - (pledgeIn.valuePledgeFulfilled || 0)
-    console.log({ amountPledged, amountToTransfer, f: pledgeIn.valuePledgeFulfilled })
     if (!identityObj || (!amountPledged && !amountToContribute)) return
     if (pledgeActive && !amountToTransfer) return
 

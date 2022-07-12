@@ -67,6 +67,7 @@ if (!showComingSoon) {
             print,
         )
         window.utils = {
+            chatClient: require('./modules/messaging').default,
             convert: require('./utils/convert'),
             DataStorage: require('./utils/DataStorage').default,
             naclHelper: require('./utils/naclHelper'),
