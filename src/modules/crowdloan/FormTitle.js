@@ -188,9 +188,9 @@ const FormTitle = ({ rxInputs }) => {
             <h1 className={classes.title}>
                 {dappTitle} {!pledgeActive ? textsCap.crowdloan : textsCap.pledge}
             </h1>
-            {!pledgeDeadline && <CrowdloanStatusSteps status={status} />}
+            {!pledgeActive && <CrowdloanStatusSteps status={status} />}
 
-            {pledgeDeadline && (
+            {pledgeActive && (
                 <Countdown {...{
                     date: pledgeDeadline,
                     title: textsCap.pledgeCountDownTitle,

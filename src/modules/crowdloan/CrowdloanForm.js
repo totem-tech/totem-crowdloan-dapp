@@ -28,7 +28,7 @@ import {
     textEllipsis,
 } from '../../utils/utils'
 // Modules
-import blockchainHelper, { crowdloanHelper, pledgeCap, pledgeDeadline, softCap, targetCap } from '../blockchain/'
+import blockchainHelper, { crowdloanHelper, pledgeCap, softCap, targetCap } from '../blockchain/'
 import Balance from '../blockchain/Balance'
 import getClient from '../messaging/'
 import { checkExtenstion, enableExtionsion } from './checkExtension'
@@ -47,6 +47,7 @@ const PLEDGE_IDENTITY = '14K5BeQDAwETVu9c7uRnxixW1DRefrbawD8yima2Mv2nR651'
 const [texts, textsCap] = translated({
     amtContdLabel: 'amount contributed to crowdloan',
     amountPledged: 'total amount pledged',
+    amountPledgedUser: 'your total pledge amount',
     amtPlgCapReachedMsg: 'We have reached the pledge cap. You can continue to make new contributions until hard cap is reached and crowdloan is active. However, you will not be able to update the pledge amount.',
     amtPlgCapReachedTitle: 'pledge cap reached!',
     amtPlgInvalid: 'please enter an amount greater or equal to your previously pledged amount',
@@ -78,6 +79,7 @@ const [texts, textsCap] = translated({
     errAccount4: 'restore account',
     errAmtMax: 'please enter an amount smaller than, or equal to',
     errAmtMin: 'please enter a number greater than',
+    errAmtToTransferMin: 'The amount to transfer must be smaller or equal to ',
     errBackup: 'To safeguard your account please click here to download a backup of your Totem account.',
     errBackup2: 'Please read & follow instructions to confirm the backup by first downloading and then uploding the downloaded file. Uploaded file will not be sent anywhere outside of this browser.',
     errBlockchainConnection: 'failed to connect to blockchain',
@@ -99,6 +101,7 @@ const [texts, textsCap] = translated({
     idLabel: 'select your blockchain identity',
     idPlaceholder: 'select a blockchain identity',
     ineligibleToPledge: 'only crowdloan contributors are eligible to participate in the pledge round',
+    insufficientBalance: 'insufficient balance!',
     invite1: 'why not invite your friends to Totem?',
     invite2: 'if your friends contribute you both will earn extra tokens.',
     missingParaId: 'missing parachain ID',
@@ -171,7 +174,7 @@ export default function CrowdloanForm(props) {
     const amountToContribute = findInput(inputNames.amountToContribute, inputs).value
     const amountContributed = findInput(inputNames.amountContributed, inputs).value
     const pledgeIn = findInput(inputNames.amountPledged, inputs)
-    const { active, isValid, pledgeActive, pledgeDeadline } = statusIn.value || {}
+    const { active, isValid, pledgeActive } = statusIn.value || {}
     const initModalId = 'init'
     const allowPledgeOnly = !!active
         && amountContributed >= 5
@@ -696,7 +699,28 @@ export const getRxInputs = (classes) => {
             type: 'slider',
             value: 0,
             valueLabelDisplay: 'auto',
-            valueLabelFormat: value => Number(value.toFixed(2)),
+            valueLabelFormat: value => {
+                const {
+                    value: amtPledged = 0,
+                    valuePledgeFulfilled: amtFulfilled = 0,
+                } = findInput(inputNames.amountPledged, rxInputs.value) || {}
+                const amountToTransfer = amtPledged - amtFulfilled
+                const label = <>{Number(value.toFixed(2))} {blockchainHelper.unit.name}</>
+
+                return !amtFulfilled || amountToTransfer <= 0
+                    ? label
+                    : (
+                        <div>
+                            <div style={{ color: 'black' }}>
+                                {textsCap.amountPledgedUser}: {label}
+                            </div>
+                            <div style={{ whiteSpace: 'nowrap' }}>
+                                {textsCap.pledgeTransferAmount + ': '}
+                                {amountToTransfer.toFixed(2)} {blockchainHelper.unit.name}
+                            </div>
+                        </div>
+                    )
+            },
             validation: {
                 validate: (pledgeIn, inputs, values) => {
                     const identity = values[inputNames.identity]
@@ -906,6 +930,25 @@ const handleSubmitCb = (rxInputs, setState) => async (_, values) => {
             }} />
         ),
     }, modalId)
+
+
+    if (pledgeActive) {
+        const balance = (await blockchainHelper.getBalance(identity)).free / 1e10
+        const maxAmtToTransfer = balance - 1.1
+        if (maxAmtToTransfer < amountToTransfer) {
+            state.submitDisabled = false
+            setState(state)
+            showMessage({
+                icon: true,
+                header: textsCap.insufficientBalance,
+                status: STATUS.error,
+                text: textsCap.errAmtToTransferMin
+                    + maxAmtToTransfer.toFixed(2)
+                    + ' ' + blockchainHelper.unit.name,
+            })
+            return
+        }
+    }
 
     const handleConfirm = async (accepted) => {
         if (!accepted) return

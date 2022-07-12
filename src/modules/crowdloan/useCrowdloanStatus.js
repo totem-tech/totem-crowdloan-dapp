@@ -123,6 +123,6 @@ subjectAsPromise(rxIsConnected, true)[0]
     .then(() => {
         getClient()
             .onCrowdloanPledgeTotal(value =>
-                rxPledgeTotal.next(value) || console.log({ pledgedTotal: value })
+                rxPledgeTotal.next(value)
             )
     })
