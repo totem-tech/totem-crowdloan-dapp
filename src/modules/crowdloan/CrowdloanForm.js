@@ -727,7 +727,7 @@ export const getRxInputs = (classes) => {
                     const maxValue = values[inputNames.amountContributed]
                     const { pledgeActive } = values[inputNames.crowdloanStatus] || {}
                     const {
-                        value,
+                        value = 0,
                         valueOld = 0,
                         valuePledgeFulfilled = 0,
                     } = pledgeIn
@@ -739,9 +739,9 @@ export const getRxInputs = (classes) => {
                     //     && minValue > 0
                     //     && minValue > value
                     const invalid = identity
-                        && value > maxValue
+                        && minValue
                         && !pledgeActive
-                        ? minValue && minValue > value
+                        ? minValue > value || value > maxValue
                         : minValue >= value
                     // reset to previous pledged amount
                     const resetValue = e => {
@@ -753,7 +753,7 @@ export const getRxInputs = (classes) => {
                         handlePledgeChange(values, inputs, pledgeIn)
                         rxInputs.next([...inputs])
                     }
-                    const error = !value || valuePledgeFulfilled === value
+                    const error = !value || minValue === value
                         ? true
                         : (
                             <>
