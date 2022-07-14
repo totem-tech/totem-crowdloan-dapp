@@ -962,6 +962,7 @@ const handleSubmitCb = (rxInputs, setState) => async (_, values) => {
             status: STATUS.loading,
             text: textsCap.signDataMsg,
         })
+
         const signature = await identityHelper
             .signature(identity, entry)
 
@@ -993,6 +994,7 @@ const handleSubmitCb = (rxInputs, setState) => async (_, values) => {
             status: STATUS.loading,
             text: textsCap.signTxMsg,
         })
+
         // execute the contribution transaction
         const [blockHash, eventErrors, txResult] = pledgeUpdateOnly
             ? []
@@ -1003,8 +1005,10 @@ const handleSubmitCb = (rxInputs, setState) => async (_, values) => {
                         'api.tx.balances.transfer',
                         [
                             PLEDGE_IDENTITY,
-                            amountToTransfer * blockchainHelper.unit.amount,
+                            parseInt(amountToTransfer * blockchainHelper.unit.amount),
                         ],
+                        rxUpdater,
+                        signer
                     )
                     .catch(customError(textsCap.errTxFailed))
                 : await blockchainHelper
