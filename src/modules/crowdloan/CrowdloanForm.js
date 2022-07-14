@@ -902,7 +902,9 @@ const handleSubmitCb = (rxInputs, setState) => async (_, values) => {
     const amountPledged = values[inputNames.amountPledged]
     const pledgeUpdateOnly = !pledgeActive && !amountToContribute && amountPledged > 0
     const pledgeIn = findInput(inputNames.amountPledged, rxInputs.value)
-    const amountToTransfer = amountPledged - (pledgeIn.valuePledgeFulfilled || 0)
+    const amountToTransfer = parseFloat(
+        (amountPledged - (pledgeIn.valuePledgeFulfilled || 0)).toFixed(2)
+    )
     if (!identityObj || (!amountPledged && !amountToContribute)) return
     if (pledgeActive && !amountToTransfer) return
 
@@ -1008,7 +1010,7 @@ const handleSubmitCb = (rxInputs, setState) => async (_, values) => {
                             parseInt(amountToTransfer * blockchainHelper.unit.amount),
                         ],
                         rxUpdater,
-                        signer
+                        signer,
                     )
                     .catch(customError(textsCap.errTxFailed))
                 : await blockchainHelper
