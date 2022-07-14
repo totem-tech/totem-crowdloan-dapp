@@ -28,7 +28,7 @@ import {
     textEllipsis,
 } from '../../utils/utils'
 // Modules
-import blockchainHelper, { crowdloanHelper, pledgeCap, softCap, targetCap } from '../blockchain/'
+import blockchainHelper, { crowdloanHelper, pledgeCap, PLEDGE_IDENTITY, softCap, targetCap } from '../blockchain/'
 import Balance from '../blockchain/Balance'
 import getClient from '../messaging/'
 import { checkExtenstion, enableExtionsion } from './checkExtension'
@@ -43,11 +43,12 @@ const BASE_REWARD = 1.15 //0.1
 const PLEDGE_PERCENTAGE = 1 // 100%
 const PLDEGE_REWARD = 3.67 //0.32
 const TOTEM_APP_URL = process.env.REACT_APP_TOTEM_APP_URL
-const PLEDGE_IDENTITY = '14K5BeQDAwETVu9c7uRnxixW1DRefrbawD8yima2Mv2nR651'
 const [texts, textsCap] = translated({
     amtContdLabel: 'amount contributed to crowdloan',
     amountPledged: 'total amount pledged',
-    amountPledgedUser: 'your total pledge amount',
+    amountPledgeFulfilled: 'amount you fulfilled',
+    amountPledgedUser: 'amount you pledged',
+    amountPledgedUser2: 'amount to be pledged',
     amtPlgCapReachedMsg: 'We have reached the pledge cap. You can continue to make new contributions until hard cap is reached and crowdloan is active. However, you will not be able to update the pledge amount.',
     amtPlgCapReachedTitle: 'pledge cap reached!',
     amtPlgInvalid: 'please enter an amount greater or equal to your previously pledged amount',
@@ -328,7 +329,7 @@ export default function CrowdloanForm(props) {
                             }} />
                     ),
                 }
-            } else {
+            } else if (!status.pledgeActive) {
                 pledgeIn.message = {
                     content: (
                         <strong style={{ color: 'deeppink' }}>
@@ -594,12 +595,15 @@ export const getRxInputs = (classes) => {
         const contributed = values[inputNames.amountContributed] || 0
         const toContribute = values[inputNames.amountToContribute] || 0
         const {
+            active,
+            pledgeDeadline,
             softCapReached,
             targetCapReached,
         } = values[inputNames.crowdloanStatus] || {}
-        const { value, valueOld } = pledgeIn
+        const { value = 0, valueOld = 0, valuePledgeFulfilled = 0 } = pledgeIn
         const pledge = values[inputNames.amountPledged]
         const totalContribution = contributed + toContribute
+        const amountToTransfer = value - valuePledgeFulfilled
         rewardsIn.hidden = !(totalContribution >= 5)
         rewardsIn.value = rewardsIn.hidden
             ? 0
@@ -609,11 +613,40 @@ export const getRxInputs = (classes) => {
                 softCapReached,
                 targetCapReached,
             )
+        const warnValue = valuePledgeFulfilled || valueOld || 0
         pledgeIn.color = pledgeIn.value > 0 && pledgeIn.max === pledgeIn.value
             ? 'success'
-            : valueOld && valueOld > value
+            : warnValue && warnValue > value
                 ? 'danger'
                 : undefined
+        const unit = blockchainHelper.unit.name
+        if (!active && pledgeDeadline) {
+            pledgeIn.message = !!value && {
+                content: (
+                    <div style={{ color: 'deeppink', whiteSpace: 'nowrap' }}>
+                        {valueOld === value
+                            ? textsCap.amountPledgedUser
+                            : textsCap.amountPledgedUser2}
+                        : {value} {unit}
+
+                        {valuePledgeFulfilled > 0 && (
+                            <div>
+                                {textsCap.amountPledgeFulfilled}: {valuePledgeFulfilled.toFixed(2)} {unit}
+                            </div>
+                        )}
+                        {amountToTransfer > 0 && (
+                            <div>
+                                <strong>
+                                    {textsCap.pledgeTransferAmount + ': '}
+                                    {amountToTransfer.toFixed(2)} {unit}
+                                </strong>
+                            </div>
+                        )}
+                    </div>
+                ),
+                style: { margin: 0 },
+            }
+        }
         return true
     }
     const tokenInputProps = (ticker = blockchainHelper?.unit?.name || 'DOT') => ({
@@ -699,28 +732,7 @@ export const getRxInputs = (classes) => {
             type: 'slider',
             value: 0,
             valueLabelDisplay: 'auto',
-            valueLabelFormat: value => {
-                const {
-                    value: amtPledged = 0,
-                    valuePledgeFulfilled: amtFulfilled = 0,
-                } = findInput(inputNames.amountPledged, rxInputs.value) || {}
-                const amountToTransfer = amtPledged - amtFulfilled
-                const label = <>{Number(value.toFixed(2))} {blockchainHelper.unit.name}</>
-
-                return !amtFulfilled || amountToTransfer <= 0
-                    ? label
-                    : (
-                        <div>
-                            <div style={{ color: 'black' }}>
-                                {textsCap.amountPledgedUser}: {label}
-                            </div>
-                            <div style={{ whiteSpace: 'nowrap' }}>
-                                {textsCap.pledgeTransferAmount + ': '}
-                                {amountToTransfer.toFixed(2)} {blockchainHelper.unit.name}
-                            </div>
-                        </div>
-                    )
-            },
+            valueLabelFormat: value => `${Number(value.toFixed(2))} ${blockchainHelper.unit.name}`,
             validation: {
                 validate: (pledgeIn, inputs, values) => {
                     const identity = values[inputNames.identity]

@@ -7,18 +7,22 @@ import {
 } from '@mui/material'
 import Message, { STATUS } from '../../components/Message'
 import { translated } from '../../utils/languageHelper'
-import blockchainHelper, { dappTitle } from '../blockchain'
+import blockchainHelper, { dappTitle, PLEDGE_IDENTITY } from '../blockchain'
 import { shorten } from '../../utils/number'
 import useStyles from './useStyles'
 import { useRxSubject } from '../../utils/reactHelper'
 import { findInput } from '../../components/form/InputCriteriaHint'
 import Countdown from '../../components/Countdown'
+import Balance from '../blockchain/Balance'
 
 const [texts, textsCap] = translated({
+    amountPledged: 'total amount pledged',
+    amountPledgedSoFar: 'total amount pledged so far',
     amountRaised: 'amount contributed',
     contributeTo: 'contribute to',
     crowdloan: 'crowdloan',
     errCrowdloanEnded: 'crowdloan has ended',
+    errCrowdloanEnded2: 'crowdloan and pledge ended',
     errCrowdloanEndedDetails: 'you can no longer make new contributions',
     errCrowdloanInvalid: 'crowdloan is coming soon',
     errCrowdloanInvalidDetails: 'please join our social media channels for announcements',
@@ -47,11 +51,13 @@ function CrowdloanStatusSteps({ status }) {
 
     const {
         active,
+        amountPledged,
         amountRaised,
         hardCap,
         hardCapReached,
         isValid,
         pledgeActive,
+        pledgeDeadline,
         softCap,
         softCapReached,
         targetCap,
@@ -61,7 +67,6 @@ function CrowdloanStatusSteps({ status }) {
     const bonusStyle = { color: 'deeppink' }
     const capStyle = { fontWeight: 'initial' }
     // const isMobile = checkDevice([DEVICE_TYPE.mobile])
-
     const steps = [
         {
             completed: true,
@@ -104,11 +109,14 @@ function CrowdloanStatusSteps({ status }) {
         },
     ].filter(Boolean)
 
+    const pledgeEnded = pledgeDeadline && !pledgeActive
     const amountRaisedEl = amountRaised > 0 && (
         <div className={classes.amountRaised}>
             <center>
                 <strong>
                     {textsCap.amountRaised}: {shorten(amountRaised, 2)} {ticker}
+                    <br />
+                    {textsCap.amountPledged}: <Balance {...{ address: PLEDGE_IDENTITY }} />
                 </strong>
             </center>
         </div>
@@ -119,7 +127,9 @@ function CrowdloanStatusSteps({ status }) {
             {!active && (
                 <Message {...{
                     header: isValid
-                        ? textsCap.errCrowdloanEnded
+                        ? !pledgeEnded
+                            ? textsCap.errCrowdloanEnded
+                            : textsCap.errCrowdloanEnded2
                         : textsCap.errCrowdloanInvalid,
                     icon: true,
                     status: STATUS.warning,
@@ -191,11 +201,26 @@ const FormTitle = ({ rxInputs }) => {
             {!pledgeActive && <CrowdloanStatusSteps status={status} />}
 
             {pledgeActive && (
-                <Countdown {...{
-                    date: pledgeDeadline,
-                    title: textsCap.pledgeCountDownTitle,
-                }} />
-            )}
+                <>
+                    <Countdown {...{
+                        date: pledgeDeadline,
+                        title: textsCap.pledgeCountDownTitle,
+                    }} />
+                    <center>
+                        <Message {...{
+                            content: (
+                                <div style={{ color: 'deeppink', fontWeight: 'bold', whiteSpace: 'wrap' }}>
+                                    {pledgeActive
+                                        ? textsCap.amountPledgedSoFar
+                                        : textsCap.pledgeActive}: {shorten(status.amountPledged, 2)} {blockchainHelper.unit.name}
+                                </div>
+                            ),
+                            style: { margin: 0 },
+                        }} />
+                    </center>
+                </>
+            )
+            }
         </Box>
     )
 }

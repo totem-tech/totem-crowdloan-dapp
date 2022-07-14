@@ -17,6 +17,7 @@ export const pledgeDeadline = new Date(process.env.REACT_APP_PLEDGE_DEADLINE)
 export const crowdloanActive = process.env.REACT_APP_CROWDLOAN_ACTIVE !== 'NO'
 const chainTitle = process.env.REACT_APP_CHAIN_TITLE || textsCap.blockchainNetwork
 export const dappTitle = process.env.REACT_APP_DAPP_TITLE || textsCap.unnamed
+export const PLEDGE_IDENTITY = '14K5BeQDAwETVu9c7uRnxixW1DRefrbawD8yima2Mv2nR651'
 
 const nodeUrls = [getUrlParam('node-url', window.location.href)]
     .filter(Boolean)
