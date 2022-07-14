@@ -890,7 +890,7 @@ const handleError = (func, onFinally, modalId) => {
  * @param   {Object}    rxInputs 
  * @param   {Function}  setState 
  * 
- * @returns {Function}  
+ * @returns {Function}
  */
 const handleSubmitCb = (rxInputs, setState) => async (_, values) => {
     const { pledgeActive } = values[inputNames.crowdloanStatus]
@@ -932,7 +932,6 @@ const handleSubmitCb = (rxInputs, setState) => async (_, values) => {
             }} />
         ),
     }, modalId)
-
 
     if (pledgeActive) {
         const balance = (await blockchainHelper.getBalance(identity)).free / 1e10
@@ -1113,7 +1112,7 @@ const handleSubmitCb = (rxInputs, setState) => async (_, values) => {
                     </span>
                     <br /><br />
                     {textsCap.pledgeTransferAmount}:
-                    <br />{amountToTransfer} {blockchainHelper.unit.name}
+                    <br />{amountToTransfer.toFixed(2)} {blockchainHelper.unit.name}
                 </>
             )
             : pledgeUpdateOnly
@@ -1213,16 +1212,3 @@ const identityOptionsModifier = (rxInputs, classes) => identities => {
     checkExtenstion(rxInputs, classes)
     return options
 }
-
-const showCompactModal = (props, modalId) => modalService.show({
-    // content: (
-    //     <Message {...{
-    //         style: { margin: 0 },
-    //         icon: true,
-    //         ...msgProps,
-    //     }} />
-    // ),
-    contentProps: { style: { padding: 0 } },
-    closeButton: null,
-    ...props,
-}, modalId)
