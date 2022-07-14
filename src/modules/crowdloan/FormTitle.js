@@ -17,7 +17,7 @@ import Balance from '../blockchain/Balance'
 
 const [texts, textsCap] = translated({
     amountPledged: 'total amount pledged',
-    amountPledgedSoFar: 'total amount pledged so far',
+    amountPledgedSoFar: 'total pledge fulfilled so far',
     amountRaised: 'amount contributed',
     contributeTo: 'contribute to',
     crowdloan: 'crowdloan',
@@ -45,6 +45,7 @@ export const inputNames = {
     title: 'title',
 }
 
+const ticker = blockchainHelper.unit.name || 'DOT'
 function CrowdloanStatusSteps({ status }) {
     const classes = useStyles()
     if (!status) return ''
@@ -63,7 +64,6 @@ function CrowdloanStatusSteps({ status }) {
         targetCap,
         targetCapReached,
     } = status
-    const ticker = blockchainHelper.unit.name || 'DOT'
     const bonusStyle = { color: 'deeppink' }
     const capStyle = { fontWeight: 'initial' }
     // const isMobile = checkDevice([DEVICE_TYPE.mobile])
@@ -116,7 +116,11 @@ function CrowdloanStatusSteps({ status }) {
                 <strong>
                     {textsCap.amountRaised}: {shorten(amountRaised, 2)} {ticker}
                     <br />
-                    {textsCap.amountPledged}: <Balance {...{ address: PLEDGE_IDENTITY }} />
+                    <Balance {...{
+                        address: PLEDGE_IDENTITY,
+                        asString: 'shorten',
+                        prefix: `${textsCap.amountPledged}: `,
+                    }} />
                 </strong>
             </center>
         </div>
@@ -211,8 +215,15 @@ const FormTitle = ({ rxInputs }) => {
                             content: (
                                 <div style={{ color: 'deeppink', fontWeight: 'bold', whiteSpace: 'wrap' }}>
                                     {pledgeActive
-                                        ? textsCap.amountPledgedSoFar
-                                        : textsCap.pledgeActive}: {shorten(status.amountPledged, 2)} {blockchainHelper.unit.name}
+                                        ? (
+                                            <Balance {...{
+                                                address: PLEDGE_IDENTITY,
+                                                asString: 'shorten',
+                                                prefix: `${textsCap.amountPledgedSoFar}: `
+                                            }} />
+                                        )
+                                        : `${textsCap.amountPledged}: ${shorten(status.amountPledged, 2)} ${ticker}`
+                                    }
                                 </div>
                             ),
                             style: { margin: 0 },

@@ -18,17 +18,20 @@ export default function Balance(props) {
     let {
         address,
         blockchainHelper = bcHelper,
-        format = true,
+        asString = true,
+        prefix,
+        suffix,
     } = props
     const [balance, loading, error] = useBalance(
         address,
-        format,
+        asString,
         blockchainHelper,
     )[0]
 
     if (error) return <Error color='error' size={18} />
     if (loading) return <CircularProgress color='warning' size={18} />
-    return balance
+
+    return <>{prefix}{balance}{suffix}</>
 }
 
 /**
