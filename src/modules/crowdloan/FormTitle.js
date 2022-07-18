@@ -128,7 +128,7 @@ function CrowdloanStatusSteps({ status }) {
 
     return (
         <>
-            {!active && (
+            {!active && isValid !== undefined && (
                 <Message {...{
                     header: isValid
                         ? !pledgeEnded
