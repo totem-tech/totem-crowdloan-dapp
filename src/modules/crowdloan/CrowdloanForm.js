@@ -46,16 +46,15 @@ const TOTEM_APP_URL = process.env.REACT_APP_TOTEM_APP_URL
 const [texts, textsCap] = translated({
     amtContdLabel: 'amount contributed to crowdloan',
     amountPledged: 'total amount pledged',
-    amountPledgeFulfilled: 'amount you fulfilled',
-    amountPledgedUser: 'amount you pledged',
-    amountPledgedUser2: 'amount to be pledged',
+    amountPledgeFulfilled: 'amount already payed',
+    amountPledgedUser: 'your selected funding target',
     amtPlgCapReachedMsg: 'We have reached the pledge cap. You can continue to make new contributions until hard cap is reached and crowdloan is active. However, you will not be able to update the pledge amount.',
     amtPlgCapReachedTitle: 'pledge cap reached!',
     amtPlgInvalid: 'please enter an amount greater or equal to your previously pledged amount',
     amtPlgInvalid2: 'please enter an amount greater than your previously transferred total amount',
     amtPlgLabel: 'amount you would like to pledge',
-    amtPlgLabel2: 'amount you pledged',
-    amtPlgLabelDetails: 'You can pledge upto a maximum 100% of your crowdloan contribution.',
+    amtPlgLabel2: 'fulfill your funding pledge now',
+    amtPlgLabelDetails: 'you can fulfill your pledge upto a maximum 100% of your crowdloan contribution.',
     amtPlgLabelDetails2: 'Your pledged amount will be requested only after a parachain slot is won.',
     amtPlgLabelDetails3: 'learn more',
     amtPlgResetValue: 'click to reset to previous pledge amount',
@@ -80,7 +79,7 @@ const [texts, textsCap] = translated({
     errAccount4: 'restore account',
     errAmtMax: 'please enter an amount smaller than, or equal to',
     errAmtMin: 'please enter a number greater than',
-    errAmtToTransferMin: 'The amount to transfer must be smaller or equal to ',
+    errAmtToTransferMin: 'The amount to be fulfilled must be smaller or equal to',
     errBackup: 'To safeguard your account please click here to download a backup of your Totem account.',
     errBackup2: 'Please read & follow instructions to confirm the backup by first downloading and then uploding the downloaded file. Uploaded file will not be sent anywhere outside of this browser.',
     errBlockchainConnection: 'failed to connect to blockchain',
@@ -97,8 +96,9 @@ const [texts, textsCap] = translated({
     pledgeFulfill: 'fulfill pledge',
     pledgeFulfillDesc: 'you are about to transfer your pledged amount to the following identity owned by Totem Live Association.',
     pledgeRecipientIdentity: 'recipient identity',
-    pledgeTransferAmount: 'amount to be transferred now',
-    howToVideo: 'Watch our "how to contribute" video',
+    pledgeTransferAmount: 'amount due to be paid now',
+    pledgeTransferDisclaimer: 'Disclaimer: pledged funds are non-refundable, unlike crowdloaned funds. By continuing with the transaction, you agree to our pledge terms and conditions.',
+    howToVideo: 'watch our "how to contribute" video',
     idLabel: 'select your blockchain identity',
     idPlaceholder: 'select a blockchain identity',
     ineligibleToPledge: 'only crowdloan contributors are eligible to participate in the pledge round',
@@ -345,7 +345,7 @@ export default function CrowdloanForm(props) {
                 rxInputs.value,
             )
             statusIn.value = status
-            if (!status.active && !status.pledgeActive) {
+            if (!status.active) {
                 pledgeIn.label = `${textsCap.amtPlgLabel2} (${blockchainHelper.unit.name})`
             }
             rxInputs.next([...rxInputs.value])
@@ -624,9 +624,7 @@ export const getRxInputs = (classes) => {
             pledgeIn.message = !!value && {
                 content: (
                     <div style={{ color: 'deeppink', whiteSpace: 'nowrap' }}>
-                        {valueOld === value
-                            ? textsCap.amountPledgedUser
-                            : textsCap.amountPledgedUser2}
+                        {textsCap.amountPledgedUser}
                         : {value.toFixed(2)} {unit}
 
                         {valuePledgeFulfilled > 0 && (
@@ -956,7 +954,7 @@ const handleSubmitCb = (rxInputs, setState) => async (_, values) => {
                 header: textsCap.insufficientBalance,
                 status: STATUS.error,
                 text: textsCap.errAmtToTransferMin
-                    + maxAmtToTransfer.toFixed(2)
+                    + ' ' + maxAmtToTransfer.toFixed(2)
                     + ' ' + blockchainHelper.unit.name,
             })
             return
@@ -1122,9 +1120,20 @@ const handleSubmitCb = (rxInputs, setState) => async (_, values) => {
                         {textEllipsis(PLEDGE_IDENTITY, 20) + ' '}
                         <ContentCopy />
                     </span>
-                    <br /><br />
+                    <br />
+                    <br />
                     {textsCap.pledgeTransferAmount}:
                     <br />{amountToTransfer.toFixed(2)} {blockchainHelper.unit.name}
+                    <br />
+                    <br />
+                    <br />
+                    <a
+                        href='https://docs.totemaccounting.com/#/crowdloan/contribution-terms?id=contributing-to-the-pledge-round'
+                        style={{ color: 'deeppink', fontWeight: 'bolder' }}
+                        target='_blank'
+                    >
+                        {textsCap.pledgeTransferDisclaimer}
+                    </a>
                 </>
             )
             : pledgeUpdateOnly
@@ -1158,11 +1167,11 @@ const handleSubmitCb = (rxInputs, setState) => async (_, values) => {
 const balances = new Map()
 /**
  * @name    identityOptionsModifier
- * @param   {Object} rxInputs 
- * @param   {Object} classes 
- * 
- * @returns {Function}
- */
+ * @param   {Object} rxInputs
+                    * @param   {Object} classes
+                    *
+                    * @returns {Function}
+                    */
 const identityOptionsModifier = (rxInputs, classes) => identities => {
     identities = Array.from(identities)
     let options = identities
