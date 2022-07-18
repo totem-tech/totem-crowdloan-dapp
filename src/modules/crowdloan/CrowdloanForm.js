@@ -627,7 +627,7 @@ export const getRxInputs = (classes) => {
                         {valueOld === value
                             ? textsCap.amountPledgedUser
                             : textsCap.amountPledgedUser2}
-                        : {value} {unit}
+                        : {value.toFixed(2)} {unit}
 
                         {valuePledgeFulfilled > 0 && (
                             <div>
