@@ -1,15 +1,25 @@
-import { Card, CardContent, List, ListItem, ListItemText, Paper, Typography } from '@mui/material'
-import React, { useEffect, useMemo, useState } from 'react'
-import { BehaviorSubject, map } from 'rxjs'
+import {
+    List,
+    ListItem,
+    ListItemText,
+} from '@mui/material'
+import React, {
+    useEffect,
+    useMemo,
+    useState,
+} from 'react'
+import { BehaviorSubject } from 'rxjs'
 import FormBuilder from '../../components/form/FormBuilder'
-import { rxIsConnected } from '../../utils/chatClient'
 import { addressToStr } from '../../utils/convert'
 import { translated } from '../../utils/languageHelper'
-import { iUseReducer, subjectAsPromise, useRxSubject } from '../../utils/reactHelper'
+import {
+    iUseReducer,
+    subjectAsPromise,
+    useRxSubject,
+} from '../../utils/reactHelper'
 import identityHelper from '../../utils/substrate/identityHelper'
-import { deferred, objWithoutKeys } from '../../utils/utils'
+import { deferred } from '../../utils/utils'
 import getClient from '../messaging'
-import { enableExtionsion } from './checkExtension'
 import { identityOptionsModifier } from './CrowdloanForm'
 import useStyles from './useStyles'
 
@@ -19,6 +29,7 @@ let textsCap = {
     crowdloandNPledgeReward: 'crowdloan & pledge reward',
     identityLabel: 'select identity',
     identityPlaceholder: 'select your identity',
+    kapexPayouts: 'KAPEX payouts',
     migratedRewards: 'migrated testnet rewards',
     pledged: 'pledged',
     pledgeFulfilled: 'pledge fulfilled',
@@ -29,7 +40,8 @@ textsCap = translated(textsCap, true)[1]
 
 const inputNames = {
     identity: 'identity',
-    payoutDetails: 'payoutDetetails'
+    payoutDetails: 'payoutDetetails',
+    title: 'title',
 }
 
 export default function PayoutsView(props) {
@@ -64,6 +76,15 @@ const getInitialState = (classes, rxKapexPayouts) => rxSetState => {
     const rxValues = new BehaviorSubject({})
     const rxSelectOpen = new BehaviorSubject(false)
     const rxInputs = new BehaviorSubject([
+        {
+            content: (
+                <h1 className={classes.title}>
+                    {textsCap.kapexPayouts}
+                </h1>
+            ),
+            name: inputNames.title,
+            type: 'html',
+        },
         {
             label: textsCap.identityLabel,
             name: inputNames.identity,
