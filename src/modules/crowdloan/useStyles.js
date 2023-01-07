@@ -21,6 +21,19 @@ export default makeStyles(() => ({
             fontWeight: 'bold',
         },
     },
+    payoutDetailsItem: {
+        paddingBottom: '0 !important',
+        paddingTop: '0 !important',
+    },
+    payoutDetailsRoot: {
+        background: '#e8e8e8',
+        borderRadius: 5,
+        padding: 25,
+    },
+    payoutDetailsTitle: {
+        color: 'deeppink',
+        fontWeight: 'bold',
+    },
     root: {
         background: 'white',
         borderRadius: 5,

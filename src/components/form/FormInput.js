@@ -51,7 +51,7 @@ export default function FormInput(props) {
     const gotValue = hasValue(value)
     // Prioritize validation message if input has a value
     message = gotValue && validation?.message || message
-    options = useRxSubject(rxOptions || options, rxOptionsModifier)[0]
+    options = useRxSubject(rxOptions || options, rxOptionsModifier)[0] || []
     style.cursor = disabled
         ? 'no-drop'
         : readOnly

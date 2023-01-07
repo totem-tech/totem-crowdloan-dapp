@@ -130,6 +130,7 @@ module.exports = {
         new LodashWebpackPlugin(),
     ],
     resolve: {
+        extensions: ['.js', '.jsx'],
         fallback: {
             assert: false,
             // required by PolkadotJS

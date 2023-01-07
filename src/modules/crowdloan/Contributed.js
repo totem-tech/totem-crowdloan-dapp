@@ -22,6 +22,7 @@ export default function Contributed({ address, className, prefix, style, suffix 
                 undefined,
                 undefined,
                 value => mounted && setValue(value),
+                false,
             ).catch(err => console.error('Failed to retrieve user contributions', err))
         })()
 
@@ -33,7 +34,7 @@ export default function Contributed({ address, className, prefix, style, suffix 
     return !value
         ? ''
         : (
-            <div {...{ className, style }} >
+            <div {...{ className, style }}>
                 {prefix}{value} {blockchainHelper.unit.name}{suffix}
             </div >
         )

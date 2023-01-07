@@ -39,9 +39,9 @@ import useStyles from './useStyles'
 import FormInput from '../../components/form/FormInput'
 import { formatBalance } from '../blockchain/formatBalance'
 
-const BASE_REWARD = 1.15 //0.1
+const BASE_REWARD = 3.5278 // 1.15 //0.1
 const PLEDGE_PERCENTAGE = 1 // 100%
-const PLDEGE_REWARD = 3.67 //0.32
+const PLDEGE_REWARD = BASE_REWARD * 3.2 //3.67 //0.32
 const TOTEM_APP_URL = process.env.REACT_APP_TOTEM_APP_URL
 const [texts, textsCap] = translated({
     amtContdLabel: 'amount contributed to crowdloan',
@@ -126,7 +126,7 @@ const [texts, textsCap] = translated({
     viewTransaction: 'view transaction',
 }, true)
 
-const logos = {
+export const logos = {
     polkadot: 'images/polkadot-logo-circle.svg',
     totem: 'images/logos/colour-t-logo.svg',
 }
@@ -1168,11 +1168,11 @@ const balances = new Map()
 /**
  * @name    identityOptionsModifier
  * @param   {Object} rxInputs
-                    * @param   {Object} classes
-                    *
-                    * @returns {Function}
-                    */
-const identityOptionsModifier = (rxInputs, classes) => identities => {
+ * @param   {Object} classes
+ *
+ * @returns {Function}
+ */
+export const identityOptionsModifier = (rxInputs, classes, subtitle) => identities => {
     identities = Array.from(identities)
     let options = identities
         .map(([address, { name, uri }]) => ({
@@ -1213,12 +1213,16 @@ const identityOptionsModifier = (rxInputs, classes) => identities => {
                         float: 'right',
                     }}>
                         {balances.get(address)}
-                        <Contributed {...{
-                            address,
-                            className: classes.contributed,
-                            key: address,
-                            prefix: `${textsCap.contributed}: `,
-                        }} />
+                        {isFn(subtitle)
+                            ? subtitle(address)
+                            : (
+                                <Contributed {...{
+                                    address,
+                                    className: classes.contributed,
+                                    key: address,
+                                    prefix: `${textsCap.contributed}: `,
+                                }} />
+                            )}
                     </div>
                 </div>
             )

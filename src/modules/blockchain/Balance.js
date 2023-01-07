@@ -54,29 +54,24 @@ export const useBalance = (address, asString = true, blockchainHelper = bcHelper
         const handleResult = result => {
             if (!mounted) return
 
+            const formatted = x => formatBalance(
+                x.free - x.feeFrozen,
+                asString,
+                blockchainHelper,
+            )
+
             const balance = !isArr(result)
                 // single result
-                ? formatBalance(
-                    result.free,
-                    asString,
-                    blockchainHelper,
-                )
+                ? formatted(result)
                 // multiple results
-                : result.map(x =>
-                    formatBalance(
-                        x.free,
-                        asString,
-                        blockchainHelper,
-                    )
-                )
+                : result.map(formatted)
             setBalance([balance, false, null])
         }
         const fetch = async () => {
-            sub = await blockchainHelper
-                .getBalance(
-                    address,
-                    handleResult,
-                )
+            sub = await blockchainHelper.getBalance(
+                address,
+                handleResult,
+            )
         }
         if (address) fetch().catch(err => {
             setBalance([

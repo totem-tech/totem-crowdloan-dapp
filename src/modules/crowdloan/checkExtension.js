@@ -167,17 +167,6 @@ export const checkExtenstion = deferred((rxInputs, classes) => {
                 title: textsCap.identityAccessGuide,
             },
         ]
-        // const guidesMobile = [
-        //     {
-        //         conent: (
-        //             <>
-
-        //                 Transfer DOT into your Totem identity.
-        //             </>
-        //         ),
-        //         title: 'How to use Totem identity to participate in the crowdloan?'
-        //     }
-        // ]
         error = isMobile
             ? (
                 <>

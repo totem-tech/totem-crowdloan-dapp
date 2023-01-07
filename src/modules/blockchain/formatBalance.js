@@ -16,7 +16,6 @@ export const formatBalance = (value, asString = false, blockchainHelper = bcHelp
     value = unitAmount > 1
         ? value / unitAmount
         : value
-
     if (!asString) return value
 
     const { decimals, name } = unit
