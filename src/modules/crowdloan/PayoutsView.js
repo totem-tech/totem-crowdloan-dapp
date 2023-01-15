@@ -200,7 +200,7 @@ const PayoutDetails = props => {
 
     const toCurrency = (
         amount,
-        currency = 'KAPEX',
+        currency = 'KPX',
         decimals = 8,
     ) => `${amount.toFixed(decimals)} ${currency}`
 
