@@ -15,6 +15,7 @@
     "build-local": "rm -rf dist-local && DIST_DIR='dist-local' DOT_ENV_PATH='.env.local' webpack --mode development",
     "build-staging": "rm -rf dist-staging && DIST_DIR='dist-staging' DOT_ENV_PATH='.env.staging' webpack --mode development",
     "start": "DOT_ENV_PATH='.env.local' webpack-dev-server",
+    "start-https": "DOT_ENV_PATH='.env.local' webpack-dev-server --https",
     "test": "echo \"No test specified\""
   },
   "dependencies": {
@@ -23,11 +24,10 @@
     "@mui/icons-material": "^5.2.5",
     "@mui/material": "^5.2.7",
     "@mui/styles": "^5.4.2",
-    "@polkadot/api": "^8.2.1",
-    "@polkadot/extension-dapp": "^0.43.1",
-    "@polkadot/keyring": "^9.0.1",
-    "@polkadot/util": "^9.0.1",
-    "@polkadot/util-crypto": "^9.0.1",
+    "@polkadot/api": "^10.0.1",
+    "@polkadot/extension-dapp": "^0.45.1",
+    "@polkadot/util": "^11.0.1",
+    "@polkadot/util-crypto": "^11.0.1",
     "bip39": "^3.0.4",
     "buffer": "^6.0.3",
     "prop-types": "^15.7.2",
@@ -36,7 +36,7 @@
     "react-router-dom": "^6.0.2",
     "regenerator-runtime": "^0.13.9",
     "rxjs": "^7.4.0",
-    "socket.io-client": "^3.0.4",
+    "socket.io-client": "^4.6.1",
     "tweetnacl": "^1.0.3",
     "web3-utils": "^1.6.1"
   },

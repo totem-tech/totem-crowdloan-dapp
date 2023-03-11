@@ -49,13 +49,20 @@ export default function PayoutsView(props) {
     const rxKapexPayouts = useMemo(() => new BehaviorSubject(new Map()), [])
     const [state, setState] = iUseReducer(null, getInitialState(classes, rxKapexPayouts))
     useRxSubject(identityHelper.rxIdentities, deferred(async (identities = new Map()) => {
-        const addresses = [...identities.keys()]
+        const keys = [...identities.keys()]
+        const addresses = keys
             .map(x => addressToStr(x, false, 0))
         const client = await getClient()
-        const payouts = await client
-            .emit('rewards-get-kapex-payouts', [addresses])
-            .catch(_ => [])
-        const payoutsMap = new Map(payouts)
+        const payoutsMap = await client
+            .emit(
+                'rewards-get-kapex-payouts',
+                [addresses],
+                result => new Map(result)
+            )
+            .catch(_ => {
+                console.log({ err: _ })
+                return new Map()
+            })
         addresses.forEach(address => !payoutsMap.get(address) && payoutsMap.set(address, {}))
         rxKapexPayouts.next(payoutsMap)
     }), 300)

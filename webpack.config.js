@@ -5,7 +5,6 @@ const LodashWebpackPlugin = require('lodash-webpack-plugin')
 const path = require('path')
 const webpack = require('webpack')
 
-
 // Port used to start ONLY the development environment
 const port = process.env.PORT || 3005
 const distDir = process.env.DIST_DIR || 'dist'

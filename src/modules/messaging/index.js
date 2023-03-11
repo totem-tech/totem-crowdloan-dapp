@@ -20,6 +20,6 @@ export default async function _getClient() {
     }
 
     setSelected('EN', client)
-    await subjectAsPromise(rxIsConnected, true)[0]
+    // await subjectAsPromise(rxIsConnected, true)[0]
     return client
 }
