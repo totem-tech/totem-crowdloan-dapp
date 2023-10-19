@@ -1,5 +1,5 @@
 import React from 'react'
-import { useRxSubject } from '../../utils/reactHelper'
+import { useRxSubject } from '../../utils/reactjs'
 import SimpleModal from './SimpleModal'
 
 export default function ModalsContainer({ rxModals }) {

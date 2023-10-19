@@ -28,7 +28,7 @@ export default makeStyles(() => ({
     payoutDetailsRoot: {
         background: '#e8e8e8',
         borderRadius: 5,
-        padding: 25,
+        marginTop: 5,
     },
     payoutDetailsTitle: {
         color: 'deeppink',
@@ -50,6 +50,7 @@ export default makeStyles(() => ({
         color: 'deeppink',
         lineHeight: 1,
         margin: 0,
+        marginBottom: 10,
         paddingBottom: 5,
         hiteSpace: 'nowrap',
     },

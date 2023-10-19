@@ -11,7 +11,7 @@ import {
     Typography,
 } from '@mui/material'
 import { deferred, hasValue, isDefined, isFn } from '../../utils/utils'
-import { useRxSubject } from '../../utils/reactHelper'
+import { useRxSubject } from '../../utils/reactjs'
 import InputCriteriaHint from './InputCriteriaHint'
 import Message from '../Message'
 import PasswordField from './PasswordField'

@@ -7,7 +7,7 @@ import { findInput } from '../../components/form/InputCriteriaHint'
 import { STATUS } from '../../components/Message'
 import { checkDevice, DEVICE_TYPE } from '../../utils/checkDevice'
 import { translated } from '../../utils/languageHelper'
-import { subjectAsPromise } from '../../utils/reactHelper'
+import { subjectAsPromise } from '../../utils/reactjs'
 import identityHelper from '../../utils/substrate/identityHelper'
 import { deferred } from '../../utils/utils'
 import { inputNames } from './FormTitle'
@@ -57,7 +57,7 @@ export const enableExtionsion = async () => {
  * 
  * @prop    {*} rxInputs    RxJS subject containing array of input definitions
  */
-export const checkExtenstion = deferred((rxInputs, classes) => {
+export const checkExtension = deferred((rxInputs, classes) => {
     if (!rxInputs?.value) return
 
     const injected = identityHelper.extension.checkInjected()

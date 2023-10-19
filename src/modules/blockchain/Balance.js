@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react'
 import { CircularProgress } from '@mui/material'
 import { Error } from '@mui/icons-material'
-import { unsubscribe } from '../../utils/reactHelper'
+import { unsubscribe } from '../../utils/reactjs'
 import { isArr, isFn } from '../../utils/utils'
 import bcHelper, { BlockchainHelper } from '.'
 import { formatBalance } from './formatBalance'

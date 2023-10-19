@@ -1,29 +1,29 @@
 import {
+    FormControl,
     List,
     ListItem,
     ListItemText,
+    MenuItem,
+    Select,
 } from '@mui/material'
-import React, {
-    useEffect,
-    useMemo,
-    useState,
-} from 'react'
+import React, { useEffect, useState } from 'react'
 import { BehaviorSubject } from 'rxjs'
-import FormBuilder from '../../components/form/FormBuilder'
 import { addressToStr } from '../../utils/convert'
 import { translated } from '../../utils/languageHelper'
 import {
-    iUseReducer,
+    FormBuilder,
+    RxSubjectView,
     subjectAsPromise,
+    useRxState,
     useRxSubject,
-} from '../../utils/reactHelper'
+} from '../../utils/reactjs'
 import identityHelper from '../../utils/substrate/identityHelper'
 import { deferred } from '../../utils/utils'
-import getClient from '../messaging'
+import chatClient from '../../utils/chatClient'
 import { identityOptionsModifier } from './CrowdloanForm'
 import useStyles from './useStyles'
 
-let textsCap = {
+const textsCap = {
     contributed: 'contributed',
     contributedToCrowdloan: 'contributed to crowdloan',
     crowdloandNPledgeReward: 'crowdloan & pledge reward',
@@ -36,36 +36,37 @@ let textsCap = {
     referralReward: 'referral reward',
     totalPayout: 'total payout',
 }
-textsCap = translated(textsCap, true)[1]
+translated(textsCap, true)
 
 const inputNames = {
     identity: 'identity',
-    payoutDetails: 'payoutDetetails',
-    title: 'title',
 }
+const rxKapexPayouts = new BehaviorSubject(new Map())
+
+identityHelper.rxIdentities.subscribe(
+    deferred(
+        async (identities = new Map()) => {
+            const keys = [...identities.keys()]
+            const addresses = keys
+                .map(x => addressToStr(x, false, 0))
+            const payoutsMap = new Map(
+                await chatClient
+                    .rewardsGetKapexPayouts(addresses)
+                    .catch(err => console.error(err, addresses))
+            )
+            addresses.forEach(address =>
+                !payoutsMap.get(address)
+                && payoutsMap.set(address, {})
+            )
+            rxKapexPayouts.next(payoutsMap)
+        },
+        500
+    )
+)
 
 export default function PayoutsView(props) {
     const classes = useStyles()
-    const rxKapexPayouts = useMemo(() => new BehaviorSubject(new Map()), [])
-    const [state, setState] = iUseReducer(null, getInitialState(classes, rxKapexPayouts))
-    useRxSubject(identityHelper.rxIdentities, deferred(async (identities = new Map()) => {
-        const keys = [...identities.keys()]
-        const addresses = keys
-            .map(x => addressToStr(x, false, 0))
-        const client = await getClient()
-        const payoutsMap = await client
-            .emit(
-                'rewards-get-kapex-payouts',
-                [addresses],
-                result => new Map(result)
-            )
-            .catch(_ => {
-                console.log({ err: _ })
-                return new Map()
-            })
-        addresses.forEach(address => !payoutsMap.get(address) && payoutsMap.set(address, {}))
-        rxKapexPayouts.next(payoutsMap)
-    }), 300)
+    const [state] = useRxState(getInitialState(classes, rxKapexPayouts))
 
     return (
         <FormBuilder {...{
@@ -74,7 +75,18 @@ export default function PayoutsView(props) {
             formProps: {
                 className: classes.root,
             },
-            submitButton: null
+            prefix: (
+                <h1 className={classes.title}>
+                    {textsCap.kapexPayouts}
+                </h1>
+            ),
+            suffix: (
+                <PayoutDetails {...{
+                    rxKapexPayouts,
+                    rxValues: state.values,
+                }} />
+            ),
+            submitText: null
         }} />
     )
 }
@@ -84,20 +96,36 @@ const getInitialState = (classes, rxKapexPayouts) => rxSetState => {
     const rxSelectOpen = new BehaviorSubject(false)
     const rxInputs = new BehaviorSubject([
         {
-            content: (
-                <h1 className={classes.title}>
-                    {textsCap.kapexPayouts}
-                </h1>
-            ),
-            name: inputNames.title,
-            type: 'html',
-        },
-        {
+            components: {
+                Container: FormControl,
+                Input: Select,
+                OptionItem: MenuItem,
+            },
+            containerProps: {
+                fullWidth: true,
+            },
+            inputProps: {
+                onClose: () => rxSelectOpen.next(false),
+                onOpen: () => rxSelectOpen.next(true),
+            },
             label: textsCap.identityLabel,
+            labelDetails: (
+                <RxSubjectView {...{
+                    subject: [rxSelectOpen, rxValues],
+                    valueModifier: ([open, values]) => !open
+                        && !values[inputNames.identity]
+                        && textsCap.identityPlaceholder
+                }} />
+            ),
+            labelDetailsProps: {
+                style: {
+                    position: 'absolute',
+                    fontWeight: 'normal',
+                    padding: 15,
+                    zIndex: 0,
+                }
+            },
             name: inputNames.identity,
-            onClose: () => rxSelectOpen.next(false),
-            onOpen: () => rxSelectOpen.next(true),
-            placeholder: textsCap.identityPlaceholder,
             rxOptions: identityHelper.rxIdentities,
             rxOptionsModifier: identityOptionsModifier(
                 rxInputs,
@@ -105,22 +133,12 @@ const getInitialState = (classes, rxKapexPayouts) => rxSetState => {
                 getSubtitle(rxKapexPayouts, rxSelectOpen),
             ),
             type: 'select',
-        },
-        {
-            content: (
-                <PayoutDetails {...{
-                    rxKapexPayouts,
-                    rxValues,
-                }} />
-            ),
-            name: inputNames.payoutDetails,
-            type: 'html',
         }
     ])
 
     return {
-        rxInputs,
-        rxValues,
+        inputs: rxInputs,
+        values: rxValues,
     }
 }
 
@@ -239,22 +257,24 @@ const PayoutDetails = props => {
     ].filter(Boolean)
 
     return (
-        <List {...{
+        <div {...{
             className: classes.payoutDetailsRoot,
             key: address,
         }}>
-            {list.map(({ className = classes.payoutDetailsItem, primary, secondary }) => (
-                <ListItem {...{ className, key: primary }}>
-                    <ListItemText {...{
-                        primary: (
-                            <span className={classes.payoutDetailsTitle}>
-                                {primary}
-                            </span>
-                        ),
-                        secondary,
-                    }} />
-                </ListItem>
-            ))}
-        </List>
+            <List>
+                {list.map(({ className = classes.payoutDetailsItem, primary, secondary }) => (
+                    <ListItem {...{ className, key: primary }}>
+                        <ListItemText {...{
+                            primary: (
+                                <span className={classes.payoutDetailsTitle}>
+                                    {primary}
+                                </span>
+                            ),
+                            secondary,
+                        }} />
+                    </ListItem>
+                ))}
+            </List>
+        </div>
     )
 }

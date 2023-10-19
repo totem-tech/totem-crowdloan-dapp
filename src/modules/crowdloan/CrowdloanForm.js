@@ -1,3 +1,6 @@
+/**
+ * To useCrowdloanForm, it needs to be updated to use utils/reactjs/components/form/FormBuilder
+ */
 import React, { useEffect, useState } from 'react'
 import { Celebration, ContentCopy, OpenInNew } from '@mui/icons-material'
 import {
@@ -16,7 +19,7 @@ import { getUser } from '../../utils/chatClient'
 import { translated } from '../../utils/languageHelper'
 import { shorten } from '../../utils/number'
 import PromisE from '../../utils/PromisE'
-import { useRxSubject } from '../../utils/reactHelper'
+import { useRxSubject } from '../../utils/reactjs'
 import identityHelper from '../../utils/substrate/identityHelper'
 import {
     arrSort,
@@ -30,8 +33,8 @@ import {
 // Modules
 import blockchainHelper, { crowdloanHelper, pledgeCap, PLEDGE_IDENTITY, softCap, targetCap } from '../blockchain/'
 import Balance from '../blockchain/Balance'
-import getClient from '../messaging/'
-import { checkExtenstion, enableExtionsion } from './checkExtension'
+import chatClient from '../../utils/chatClient'
+import { checkExtension, enableExtionsion } from './checkExtension'
 import Contributed from './Contributed'
 import FormTitle from './FormTitle'
 import useCrowdloanStatus from './useCrowdloanStatus'
@@ -1228,12 +1231,13 @@ export const identityOptionsModifier = (rxInputs, classes, subtitle) => identiti
             )
 
             return {
+                children: text,
                 key: address,
-                text,
                 value: address,
             }
         })
 
-    checkExtenstion(rxInputs, classes)
+    checkExtension(rxInputs, classes)
+
     return options
 }

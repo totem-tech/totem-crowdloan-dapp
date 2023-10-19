@@ -9,7 +9,9 @@ import blockchainHelper from './modules/blockchain'
 import { crowdloanHelper } from './modules/blockchain'
 import identityHelper from './utils/substrate/identityHelper'
 import App from './App'
+import { getClient } from './utils/chatClient'
 
+const SERVER_URL = process.env.REACT_APP_MESSAGING_SERVER_URL
 const showComingSoon = process.env.REACT_APP_COMING_SOON === 'true'
 const appEnv = process.env.REACT_APP_ENV
 const nodeEnv = process.env.NODE_ENV
@@ -67,7 +69,7 @@ if (!showComingSoon) {
             print,
         )
         window.utils = {
-            chatClient: require('./modules/messaging').default,
+            chatClient: getClient(SERVER_URL),
             convert: require('./utils/convert'),
             DataStorage: require('./utils/DataStorage').default,
             naclHelper: require('./utils/naclHelper'),
